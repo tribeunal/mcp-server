@@ -403,8 +403,8 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'tribeunal_leave_tribe',
     title: 'Leave tribe',
-    annotations: { title: 'Leave tribe', readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: 'Leave a tribe you are currently a member of. Leaving a private tribe does not delete the invitation that let you in, so you may rejoin.',
+    annotations: { title: 'Leave tribe', readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+    description: 'Leave a tribe you are currently a member of. Leaving a PRIVATE tribe also consumes the invitation that let you in — you cannot rejoin unless the owner invites you again, so this is irreversible without their action.',
     inputSchema: {
       type: 'object',
       properties: {
