@@ -433,7 +433,7 @@ export const TOOL_DEFINITIONS = [
     name: 'tribeunal_invite_tribe_members',
     title: 'Invite tribe members',
     annotations: { title: 'Invite tribe members', readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: 'Invite people into a PRIVATE tribe you own (or any, as an admin), by username or email. Each invitee is resolved independently and reported back with its own outcome — invited / already_invited / already_member / not_found / self — so an unresolvable name does not fail the batch. Each invitee may then view and join the tribe. Public tribes are already open to everyone, so inviting into one returns 400.',
+    description: 'Invite people into a PRIVATE tribe you own (or any, as an admin), by username or email. Each invitee is resolved independently and reported back with its own outcome — invited / already_invited / already_member / not_found / self — so an unresolvable name does not fail the batch. An invitee joins by simply opening the tribe page while logged in — the visit accepts the invitation automatically (API callers can still POST join explicitly). Public tribes are already open to everyone, so inviting into one returns 400.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -567,7 +567,7 @@ export const TOOL_DEFINITIONS = [
     title: 'Invite jurors',
     annotations: { title: 'Invite jurors', readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     description:
-      'Invite users to the jury of a case you own (owner or admin only). Works on any case regardless of jury type — an invitation is recruitment, not restriction: on a public-jury case it notifies the invitee and its accept link seats them as a normal juror, and it never restricts the open participation a public case already grants everyone. Provide `invitees` (usernames or emails) and/or a `tribeId` to invite an entire tribe (every current member plus the chieftain) — at least one is required. You must be a member, owner or admin of any tribe you name. Each invitee is processed independently — the response reports invited / duplicate / not_found per entry. The response also echoes the case url and, for a private case, its view-only shareUrl — when telling people about a private case, give them the shareUrl (the bare url 404s anyone without access).',
+      'Invite users to the jury of a case you own (owner or admin only). Works on any case regardless of jury type — an invitation is recruitment, not restriction: it notifies the invitee, and merely opening the case page while logged in seats them as a normal juror (no separate accept step); it never restricts the open participation a public case already grants everyone. Provide `invitees` (usernames or emails) and/or a `tribeId` to invite an entire tribe (every current member plus the chieftain) — at least one is required. You must be a member, owner or admin of any tribe you name. Each invitee is processed independently — the response reports invited / duplicate / not_found per entry. The response also echoes the case url and, for a private case, its view-only shareUrl — when telling people about a private case, give them the shareUrl (the bare url 404s anyone without access).',
     inputSchema: {
       type: 'object',
       properties: {
