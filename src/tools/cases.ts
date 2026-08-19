@@ -7,7 +7,7 @@ import { caseUuid } from './uuid.js';
 
 export const SearchCasesSchema = z.object({
   query: z.string().optional().describe('Search cases by title or description'),
-  status: z.enum(['init', 'open', 'closed', 'expired', 'suspended']).optional().describe('Filter by case status (open = accepting votes)'),
+  status: z.enum(['init', 'jury_selection', 'open', 'closed', 'expired', 'suspended']).optional().describe('Filter by case status (open = accepting votes, jury_selection = still assembling its jury)'),
   type: z.enum(['case', 'advice', 'poll']).optional().describe('Filter by case type — case (binding jury decision), advice (input for the creator), poll (opinion gathering)'),
   tags: z.array(z.string()).optional().describe('Filter by tags'),
   page: z.number().min(1).default(1).describe('Page number for pagination'),
@@ -71,5 +71,5 @@ export const ListEvidenceSchema = z.object({
 });
 
 export const CloseCaseSchema = z.object({
-  caseId: caseUuid('Case UUID of the open case to close early (you must be the case owner, or an admin)'),
+  caseId: caseUuid('Case UUID of the open or jury_selection case to close early (you must be the case owner, or an admin)'),
 });

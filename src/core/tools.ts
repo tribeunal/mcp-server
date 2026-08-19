@@ -117,7 +117,7 @@ export const TOOL_DEFINITIONS = [
       type: 'object',
       properties: {
         query: { type: 'string', description: 'Search query for case title or description' },
-        status: { type: 'string', enum: ['init', 'open', 'closed', 'expired', 'suspended'], description: 'Case status filter (open = accepting votes)' },
+        status: { type: 'string', enum: ['init', 'jury_selection', 'open', 'closed', 'expired', 'suspended'], description: 'Case status filter (open = accepting votes, jury_selection = still assembling its jury)' },
         type: { type: 'string', enum: ['case', 'advice', 'poll'], description: 'Case type filter' },
         tags: { type: 'array', items: { type: 'string' }, description: 'Filter by tags' },
         page: { type: 'number', minimum: 1, default: 1, description: 'Page number for pagination' },
@@ -143,11 +143,11 @@ export const TOOL_DEFINITIONS = [
     title: 'Close case',
     annotations: { title: 'Close case', readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     description:
-      'Close one of YOUR open cases early (case owner or admin only). Pulls the voting deadline to now and triggers the verdict pipeline; the case must currently be open, and the decision is determined asynchronously. Follow up with tribeunal_await_verdict to read the outcome.',
+      'Close one of YOUR cases early (case owner or admin only). Works on open cases and on cases still in jury_selection (an abandoned jury ends Undecided). Pulls the voting deadline to now and triggers the verdict pipeline; the decision is determined asynchronously. Follow up with tribeunal_await_verdict to read the outcome.',
     inputSchema: {
       type: 'object',
       properties: {
-        caseId: { type: 'string', pattern: UUID_PATTERN, description: 'Case UUID of the open case to close early (owner or admin only)' },
+        caseId: { type: 'string', pattern: UUID_PATTERN, description: 'Case UUID of the open or jury_selection case to close early (owner or admin only)' },
       },
       required: ['caseId'],
     },
