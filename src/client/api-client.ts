@@ -196,12 +196,16 @@ export class TribeunalAPIClient {
     jurorCount?: number;
     openImmediately?: boolean;
     allowsGuestVotes?: boolean;
+    arbitrationMode?: boolean;
+    decisionRequirement?: 'any' | 'simple' | 'qualified' | 'unanimous';
+    minVotes?: number;
     tags?: string[];
   }) {
     const { caseLength, ...rest } = data;
     // The backend's create contract still names the duration `trialLength`; this
     // is the single internal mapping from the user-facing `caseLength`. Every other
-    // field (openImmediately and allowsGuestVotes included) forwards verbatim;
+    // field (openImmediately, allowsGuestVotes and the three arbitration fields
+    // included) forwards verbatim;
     // omitting either lets the backend default it — true and false respectively.
     // Each side's `image` maps to the backend's `imageUrl` field the same way.
     const sides = rest.sides.map(({ image, ...side }) => (image === undefined ? side : { ...side, imageUrl: image }));

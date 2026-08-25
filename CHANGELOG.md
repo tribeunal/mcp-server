@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+### Added
+- `tribeunal_create_case` gains `arbitrationMode`, `decisionRequirement` and `minVotes`.
+  `decisionRequirement` (`any` | `simple` | `qualified` | `unanimous`) and `minVotes` are
+  general to every case: they set the weakest outcome the case will accept as a verdict and
+  the turnout it needs, and missing either now closes the case with a **Void** verdict
+  carrying `voidReason` (`requirement_not_met` / `quorum_not_met`) instead of no verdict at
+  all. `arbitrationMode` is the integrity bundle on top, for a verdict someone outside the
+  case has to rely on: its owner may not vote, join the jury or close early, evidence marks
+  freeze once it closes, and the early-vote and decisive-vote reward bonuses are off. Two
+  rules are refined client-side so the caller gets a named parameter rather than a bare 400:
+  arbitration cannot be combined with `allowsGuestVotes`, and its quorum must be at least 2
+  (omit `minVotes` and the backend uses 3).
+- The activity feed emits a new `trial_reopened` type, accepted by the `types` filter on
+  `tribeunal_get_case_activity` and `tribeunal_await_case_activity`.
+- The verdict block gained `version`, `supersededVerdicts`, `voidReason`, `quorum` and
+  `voterBreakdown`. No output work was needed — `tribeunal_get_case`,
+  `tribeunal_create_case` and `tribeunal_await_verdict` print the raw JSON.
+
 ### Fixed
 - `tribeunal_list_tribes` no longer describes itself as public browsing: the description now
   says the list includes the private tribes you own or belong to — so it doubles as "find my

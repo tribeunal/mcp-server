@@ -19,6 +19,7 @@ const ACTIVITY_TYPES = [
   'evidence_unmarked',
   'jury_joined',
   'trial_closed',
+  'trial_reopened',
 ] as const;
 
 export const GetCaseActivitySchema = z.object({

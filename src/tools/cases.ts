@@ -34,6 +34,9 @@ export const CreateCaseSchema = z.object({
   jurorCount: z.number().int().min(2).max(100).optional().describe('Number of jurors the case asks for (2-100, default 12). It gates opening only when openImmediately is false, where the case waits until this many jurors have joined. For a small invited panel, set this to the number of people you invite.'),
   openImmediately: z.boolean().optional().describe('Open the case for voting straight away (default true). Invited jurors are still invited and can view, join and vote while it is already open. Set false to hold the case in jury selection until jurorCount jurors have joined, and only then open it.'),
   allowsGuestVotes: z.boolean().optional().describe('Let visitors without a Tribeunal account vote on this case (default false). Guest votes count in full — they enter the tallies, percentages and the verdict exactly like a registered juror\'s. Requires a public jury; visibility may be either, and pairing it with visibility "private" makes a link-poll: unlisted everywhere, but votable by whoever holds the link. Guests are deduplicated per browser, so a returning visitor changes their vote rather than adding one, but someone determined can still vote again from another browser — enable it where reach matters more than strict one-person-one-vote.'),
+  arbitrationMode: z.boolean().optional().describe('Bind this case to arbitration rules, for a verdict someone outside the case has to rely on (default false). You cannot vote on, join the jury of, or close early a case you created in this mode — an admin closes it, or it closes at its deadline; evidence marks freeze once it closes so the record it was decided on stops moving; and the early-vote and decisive-vote reward bonuses are switched off so nobody is paid to move the outcome. Requires minVotes of at least 2 (omit it and 3 is used) and cannot be combined with allowsGuestVotes. Use it when the case settles something with stakes — a dispute, a payout, a contract term — rather than gathering opinion.'),
+  decisionRequirement: z.enum(['any', 'simple', 'qualified', 'unanimous']).optional().describe('The weakest outcome this case will accept as a verdict (default "any"). "any" takes whatever the tally gives, down to a plurality. "simple" needs more than half, "qualified" needs 66%+, "unanimous" needs every vote on one side. A case that reaches a stronger result than required still reports the stronger one. Miss the requirement and the case closes with a Void verdict carrying voidReason "requirement_not_met" instead of a decision.'),
+  minVotes: z.number().int().min(0).max(100).optional().describe('Fewest votes this case needs before it can reach a verdict (0-100, default 0 = no minimum). Close it with fewer and it ends with a Void verdict carrying voidReason "quorum_not_met" rather than deciding on a turnout of one or two.'),
   tags: z.array(z.string()).max(4).optional().describe('Up to 4 tags for categorization'),
 }).superRefine((data, ctx) => {
   // A private case is normally visible only to its owner, invited jurors and admins, so
@@ -63,6 +66,28 @@ export const CreateCaseSchema = z.object({
       path: ['allowsGuestVotes'],
       message: 'Anonymous voting requires a public jury.',
     });
+  }
+
+  // A verdict an outside party is meant to rely on cannot rest on voters nobody can hold
+  // to account, nor on a turnout of one. Caught here so the caller gets a named parameter
+  // and a reason instead of a bare 400 from the backend, which enforces the same two rules
+  // in an entity constraint and a DB CHECK.
+  if (data.arbitrationMode === true) {
+    if (data.allowsGuestVotes === true) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['allowsGuestVotes'],
+        message: 'An arbitration case cannot allow anonymous voting — its voters must be accountable.',
+      });
+    }
+
+    if (data.minVotes !== undefined && data.minVotes < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['minVotes'],
+        message: 'An arbitration case requires a quorum of at least 2 votes; omit minVotes to use 3.',
+      });
+    }
   }
 });
 

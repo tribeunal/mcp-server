@@ -212,6 +212,20 @@ const linkPoll = await client.callTool('tribeunal_create_case', {
   sides: [{ name: 'Lisbon' }, { name: 'Tallinn' }],
 });
 
+// An arbitration case: for a verdict someone outside the case has to rely on. You cannot
+// vote on it, join its jury, or close it early — it closes at its deadline or by an admin.
+// It needs a real quorum (omit minVotes and 3 is used) and refuses anonymous voting, and a
+// requirement it fails to meet ends it with a Void verdict rather than a thin decision.
+const arbitration = await client.callTool('tribeunal_create_case', {
+  title: 'Should the deposit be returned in full?',
+  description: 'Tenant and landlord disagree on cleaning costs. Both submitted photos.',
+  type: 'case',
+  arbitrationMode: true,
+  decisionRequirement: 'qualified',
+  minVotes: 5,
+  sides: [{ name: 'Return in full' }, { name: 'Withhold cleaning costs' }],
+});
+
 // 2. Block until the case reaches a verdict (returns instantly if already terminal).
 //    On the worker transport this streams notifications/progress every 5s.
 const result = await client.callTool('tribeunal_await_verdict', { caseId, timeoutS: 150 });
