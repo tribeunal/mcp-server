@@ -177,6 +177,25 @@ export function verdictHeadline(result: AwaitResult): string | null {
   if (v === null) return null;
   // Defensive: getCaseActivity casts the response without runtime validation,
   // so a malformed verdict block must degrade to a headline, not throw.
+
+  // A terminal case that decided nothing must not be dressed as a decision. Void is
+  // arbitration mode's designed outcome, and this is the FIRST line an agent reads:
+  // rendering it through the template below yields `Verdict: "Void" by undecided (0/3)`
+  // — a named verdict, a nonsense type, a zero tally, and no reason.
+  if (v.decided === false) {
+    const label = v.name ?? 'Undecided';
+
+    if (v.voidReason === 'quorum_not_met' && v.quorum) {
+      return `No verdict — the case closed ${label} (quorum_not_met: ${v.quorum.received} of ${v.quorum.required} required votes).`;
+    }
+
+    if (v.voidReason) {
+      return `No verdict — the case closed ${label} (${v.voidReason}; ${v.totalVotes} vote(s) cast).`;
+    }
+
+    return `No verdict — the case closed ${label} (${v.totalVotes} vote(s) cast, no side won).`;
+  }
+
   const winners = Array.isArray(v.sides) ? v.sides.filter((s) => s.isWinner) : [];
   const winnerVotes = winners.reduce((n, s) => n + s.totalVotes, 0);
   return `Verdict: "${v.name ?? '—'}" by ${v.typeName} (${winnerVotes}/${v.totalVotes})`;

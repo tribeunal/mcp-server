@@ -103,12 +103,46 @@ test('the activity schema accepts the new trial_reopened type', () => {
   assert.equal(result.success, true);
 });
 
+test('explicit false / zero are forwarded, not stripped as defaults', async () => {
+  const record: { data?: Record<string, unknown> } = {};
+  await dispatchToolCall(fakeClient(record), 'tribeunal_create_case', {
+    ...baseArgs,
+    arbitrationMode: false,
+    minVotes: 0,
+    decisionRequirement: 'any',
+  });
+
+  // Caller said so explicitly; only OMITTED fields are the backend's to default.
+  assert.equal(record.data?.arbitrationMode, false);
+  assert.equal(record.data?.minVotes, 0);
+  assert.equal(record.data?.decisionRequirement, 'any');
+});
+
 test('the hand-written JSON schema mirrors the zod schema', () => {
   const createCase = TOOL_DEFINITIONS.find((t) => t.name === 'tribeunal_create_case');
-  const props = (createCase?.inputSchema as { properties: Record<string, unknown> }).properties;
+  const props = (createCase?.inputSchema as { properties: Record<string, Record<string, unknown>> }).properties;
 
   for (const field of ['arbitrationMode', 'decisionRequirement', 'minVotes']) {
     assert.ok(props[field], `${field} missing from the hand-written JSON schema`);
+  }
+
+  // Presence alone is not the bug this test exists for. The two copies are maintained
+  // by hand, so drift shows up as a wrong enum or a wrong bound, which a truthiness
+  // check sails straight past.
+  assert.equal(props.arbitrationMode.type, 'boolean');
+  assert.deepEqual(props.decisionRequirement.enum, ['any', 'simple', 'qualified', 'unanimous']);
+  assert.equal(props.minVotes.type, 'integer');
+  assert.equal(props.minVotes.minimum, 0);
+  assert.equal(props.minVotes.maximum, 100);
+
+  // And the agent-facing text must not diverge between the copies either.
+  const zodShape = (CreateCaseSchema as unknown as { _def: { schema: { shape: Record<string, { description?: string }> } } })._def.schema.shape;
+  for (const field of ['arbitrationMode', 'decisionRequirement', 'minVotes']) {
+    assert.equal(
+      props[field].description,
+      zodShape[field].description,
+      `${field} description has drifted between the zod and JSON schemas`,
+    );
   }
 
   // The activity type list lives in three places; a backend type missing from any one of

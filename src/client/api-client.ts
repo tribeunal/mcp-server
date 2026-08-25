@@ -89,6 +89,16 @@ export interface CaseVerdict {
   sides: Array<{ uuid: string; name: string | null; totalVotes: number; votePercentage: number; isWinner: boolean }>;
   totalVotes: number;
   decidedAt: string | null;
+  /** 1 for a case decided once; increments per reopen. */
+  version: number;
+  /** Verdicts reached before the most recent reopen, oldest first. */
+  supersededVerdicts: Array<{ decisionUuid: string; type: number; typeName: string; name: string | null; decidedAt: string | null }>;
+  /** Why the verdict is Void, or null on an ordinary verdict (a plain tie included). */
+  voidReason: 'quorum_not_met' | 'requirement_not_met' | null;
+  /** required is the case's minVotes (0 when it set none). */
+  quorum: { required: number; received: number };
+  /** A guest vote has no owner; every other vote is a person or an AI persona. */
+  voterBreakdown: { human: number; ai: number; guest: number };
 }
 
 /** Response of GET /api/cases/{uuid}/activity. */

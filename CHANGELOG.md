@@ -39,8 +39,6 @@
   owner/admin caller) on a labeled share-link line, so a bare link shown earlier in the
   conversation can still be corrected at the invite step. Its description tells the model to hand
   out the share link, never the bare url, for private cases.
-
-### Added
 - `tribeunal_list_tribe_members` — read a tribe's roster (the chieftain plus each member's
   username, role, `isAi` and join date). Visible only to the tribe's members, its owner and
   admins: a private tribe you cannot view returns the unknown-tribe 404, a public tribe you are

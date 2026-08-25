@@ -103,8 +103,8 @@ export const TOOL_DEFINITIONS = [
         jurorCount: { type: 'integer', minimum: 2, maximum: 100, description: 'Number of jurors the case asks for (2-100, default 12). It gates opening only when openImmediately is false, where the case waits until this many jurors have joined. For a small invited panel, set this to the number of people you invite.' },
         openImmediately: { type: 'boolean', description: 'Open the case for voting straight away (default true). Invited jurors are still invited and can view, join and vote while it is already open. Set false to hold the case in jury selection until jurorCount jurors have joined, and only then open it.' },
         allowsGuestVotes: { type: 'boolean', description: 'Let visitors without a Tribeunal account vote on this case (default false). Guest votes count in full — they enter the tallies, percentages and the verdict exactly like a registered juror\'s. Requires a public jury; visibility may be either, and pairing it with visibility "private" makes a link-poll: unlisted everywhere, but votable by whoever holds the link. Guests are deduplicated per browser, so a returning visitor changes their vote rather than adding one, but someone determined can still vote again from another browser — enable it where reach matters more than strict one-person-one-vote.' },
-        arbitrationMode: { type: 'boolean', description: 'Bind this case to arbitration rules, for a verdict someone outside the case has to rely on (default false). You cannot vote on, join the jury of, or close early a case you created in this mode — an admin closes it, or it closes at its deadline; evidence marks freeze once it closes so the record it was decided on stops moving; and the early-vote and decisive-vote reward bonuses are switched off so nobody is paid to move the outcome. Requires minVotes of at least 2 (omit it and 3 is used) and cannot be combined with allowsGuestVotes. Use it when the case settles something with stakes — a dispute, a payout, a contract term — rather than gathering opinion.' },
-        decisionRequirement: { type: 'string', enum: ['any', 'simple', 'qualified', 'unanimous'], description: 'The weakest outcome this case will accept as a verdict (default "any"). "any" takes whatever the tally gives, down to a plurality. "simple" needs more than half, "qualified" needs 66%+, "unanimous" needs every vote on one side. A case that reaches a stronger result than required still reports the stronger one. Miss the requirement and the case closes with a Void verdict carrying voidReason "requirement_not_met" instead of a decision.' },
+        arbitrationMode: { type: 'boolean', description: 'Bind this case to arbitration rules, for a verdict someone outside the case has to rely on (default false). You cannot vote on, join the jury of, or close early a case you created in this mode — an admin closes it, or it closes at its deadline; evidence marks freeze once it closes so the record it was decided on stops moving; and the early-vote and decisive-vote reward multipliers are switched off, so timing your vote no longer multiplies your payout. Requires minVotes of at least 2 (omit it and 3 is used) and cannot be combined with allowsGuestVotes. Use it when the case settles something with stakes — a dispute, a payout, a contract term — rather than gathering opinion.' },
+        decisionRequirement: { type: 'string', enum: ['any', 'simple', 'qualified', 'unanimous'], description: 'The weakest outcome this case will accept as a verdict (default "any"). "any" takes whatever the tally gives, down to a plurality. "simple" needs at least half, "qualified" at least 66%, "unanimous" every vote on one side. A case that reaches a stronger result than required still reports the stronger one. On any value other than "any", missing the requirement closes the case with a Void verdict carrying voidReason "requirement_not_met"; an "any" case that merely ties stays Undecided.' },
         minVotes: { type: 'integer', minimum: 0, maximum: 100, description: 'Fewest votes this case needs before it can reach a verdict (0-100, default 0 = no minimum). Close it with fewer and it ends with a Void verdict carrying voidReason "quorum_not_met" rather than deciding on a turnout of one or two.' },
         tags: { type: 'array', items: { type: 'string' }, maxItems: 4, description: 'Up to 4 tags for categorization' },
       },
@@ -146,7 +146,7 @@ export const TOOL_DEFINITIONS = [
     title: 'Close case',
     annotations: { title: 'Close case', readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     description:
-      'Close one of YOUR cases early (case owner or admin only). Works on open cases and on cases still in jury_selection (an abandoned jury ends Undecided). Pulls the voting deadline to now and triggers the verdict pipeline; the decision is determined asynchronously. Follow up with tribeunal_await_verdict to read the outcome. On an arbitration-mode case the owner may not close early or vote — an admin closes it, or it closes at its deadline.',
+      'Close one of YOUR cases early (case owner or admin only). Works on open cases and on cases still in jury_selection (an abandoned jury ends Undecided). Pulls the voting deadline to now and triggers the verdict pipeline; the decision is determined asynchronously. Follow up with tribeunal_await_verdict to read the outcome. You cannot close an arbitration-mode case you own: only an admin can, or it closes on its own at its deadline.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -188,7 +188,7 @@ export const TOOL_DEFINITIONS = [
     name: 'tribeunal_cast_vote',
     title: 'Cast vote',
     annotations: { title: 'Cast vote', readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: 'Cast a vote on a case for a specific side/option, optionally with a short comment explaining your reasoning (shown in the case activity feed). On an arbitration-mode case the owner may not close early or vote — an admin closes it, or it closes at its deadline.',
+    description: 'Cast a vote on a case for a specific side/option, optionally with a short comment explaining your reasoning (shown in the case activity feed). You cannot vote on an arbitration-mode case you own — its verdict is meant to be relied on by others.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -258,7 +258,7 @@ export const TOOL_DEFINITIONS = [
     name: 'tribeunal_mark_evidence',
     title: 'Mark comment as evidence',
     annotations: { title: 'Mark comment as evidence', readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: "Mark another user's comment or a case file as evidence (case owner or jury members only; you cannot mark your own comment)",
+    description: "Mark another user's comment or a case file as evidence (case owner or jury members only; you cannot mark your own comment). On an arbitration-mode case the evidence record freezes once the case leaves open: marking and unmarking both answer 403 evidence_frozen, which means the record is closed, NOT that you lack permission — do not retry.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -272,7 +272,7 @@ export const TOOL_DEFINITIONS = [
     name: 'tribeunal_unmark_evidence',
     title: 'Unmark evidence',
     annotations: { title: 'Unmark evidence', readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: 'Remove an evidence mark from a comment or case file (case owner or jury members only)',
+    description: 'Remove an evidence mark from a comment or case file (case owner or jury members only). On an arbitration-mode case the evidence record freezes once the case leaves open: marking and unmarking both answer 403 evidence_frozen, which means the record is closed, NOT that you lack permission — do not retry.',
     inputSchema: {
       type: 'object',
       properties: {

@@ -49,6 +49,11 @@ function verdictBlock(overrides: Partial<CaseVerdict> = {}): CaseVerdict {
     ],
     totalVotes: 1,
     decidedAt: '2026-07-06T10:05:00+00:00',
+    version: 1,
+    supersededVerdicts: [],
+    voidReason: null,
+    quorum: { required: 0, received: 1 },
+    voterBreakdown: { human: 1, ai: 0, guest: 0 },
     ...overrides,
   };
 }
@@ -153,6 +158,64 @@ test('awaitVerdict returns instantly when the case is already terminal', async (
 test('verdictHeadline summarizes a decided verdict', () => {
   const res = { ...page({ verdict: verdictBlock() }), timedOut: false, waitedS: 0 };
   assert.equal(verdictHeadline(res), 'Verdict: "Ship it" by unanimous (1/1)');
+});
+
+// A Void verdict is arbitration mode's designed outcome, and it is the FIRST line an
+// agent reads from await_verdict. Rendering it through the decided-verdict template
+// produces `Verdict: "Void" by undecided (0/3)` — a named verdict, a nonsense type and a
+// zero tally, with the one field that explains it (voidReason) never surfacing.
+test('verdictHeadline explains a Void verdict instead of dressing it as a decision', () => {
+  const res = {
+    ...page({
+      verdict: verdictBlock({
+        decided: false,
+        type: 0,
+        typeName: 'undecided',
+        name: 'Void',
+        winningSides: [],
+        sides: [
+          { uuid: 'side-1', name: 'Yes', totalVotes: 2, votePercentage: 67, isWinner: false },
+          { uuid: 'side-2', name: 'No', totalVotes: 1, votePercentage: 33, isWinner: false },
+        ],
+        totalVotes: 2,
+        voidReason: 'quorum_not_met',
+        quorum: { required: 3, received: 2 },
+      }),
+    }),
+    timedOut: false,
+    waitedS: 0,
+  };
+
+  const headline = verdictHeadline(res);
+
+  assert.ok(headline, 'a Void verdict still gets a headline');
+  assert.ok(/no verdict/i.test(headline), `headline must not read as a decision: ${headline}`);
+  assert.ok(/quorum_not_met/.test(headline), 'the reason must reach the headline');
+  assert.ok(/3/.test(headline) && /2/.test(headline), 'required vs received turnout must be visible');
+  assert.ok(!/by undecided/.test(headline), 'the decided-verdict template must not be reused');
+});
+
+test('verdictHeadline reports a plain Undecided tie without inventing a void reason', () => {
+  const res = {
+    ...page({
+      verdict: verdictBlock({
+        decided: false,
+        type: 0,
+        typeName: 'undecided',
+        name: 'Undecided',
+        winningSides: [],
+        totalVotes: 2,
+        voidReason: null,
+      }),
+    }),
+    timedOut: false,
+    waitedS: 0,
+  };
+
+  const headline = verdictHeadline(res);
+
+  assert.ok(headline && /no verdict/i.test(headline), `expected a no-verdict headline: ${headline}`);
+  assert.ok(!/quorum_not_met|requirement_not_met/.test(headline), 'there is no void reason to report');
 });
 
 test('awaitVerdictNotice flags a case that has not opened yet', () => {
