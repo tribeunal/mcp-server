@@ -456,7 +456,7 @@ export const TOOL_DEFINITIONS = [
       required: ['tribeId', 'invitees'],
     },
   },
-  // User tools
+  // Webhook tools
   {
     name: 'tribeunal_create_webhook',
     title: 'Create webhook',
@@ -465,7 +465,7 @@ export const TOOL_DEFINITIONS = [
     inputSchema: {
       type: 'object',
       properties: {
-        url: { type: 'string', maxLength: 2048, description: 'HTTPS URL that will receive the signed POST requests' },
+        url: { type: 'string', format: 'uri', maxLength: 2048, description: 'HTTPS URL that will receive the signed POST requests' },
         events: {
           type: 'array',
           items: { type: 'string', enum: [...WEBHOOK_EVENTS] },
@@ -496,6 +496,7 @@ export const TOOL_DEFINITIONS = [
       required: ['webhookId'],
     },
   },
+  // User tools
   {
     name: 'tribeunal_get_user',
     title: 'Get user',

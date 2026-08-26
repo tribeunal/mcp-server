@@ -105,6 +105,11 @@ MCP has no server→model push that reaches a running turn, so the await tools *
 - `tribeunal_jury_duty_status` / `_allowance` / `_dashboard` / `_start` / `_cancel` / `_accept` / `_reject` / `_history`
 - `tribeunal_invite_jurors` — invite users (username or email) to the jury of a case you own, or pass a `tribeId` to recruit a whole tribe (members + chieftain)
 
+### Webhooks
+- `tribeunal_create_webhook` — register an https URL to receive your cases' events, signed; returns the signing secret once
+- `tribeunal_list_webhooks` — your endpoints with delivery health (last status, failure count); never returns secrets
+- `tribeunal_delete_webhook` — remove an endpoint; stops deliveries and destroys its secret
+
 ## Example flows
 
 ### Awaiting a verdict (executor agent)
