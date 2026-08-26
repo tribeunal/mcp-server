@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+- Three webhook tools — `tribeunal_create_webhook`, `tribeunal_list_webhooks`,
+  `tribeunal_delete_webhook` — bringing the shared tool count to **38**. Register an HTTPS URL
+  and Tribeunal POSTs your cases' events to it (signed, retried), so an agent can react to a
+  verdict without polling `tribeunal_await_verdict`. The create tool prints the signing secret
+  once and states plainly that it is not shown again, along with how to verify a delivery
+  (`hmac_sha256(secret, "{X-Tribeunal-Timestamp}.{raw body}")` against `X-Tribeunal-Signature`).
+  `tribeunal_list_webhooks` never carries secrets; `tribeunal_delete_webhook` is annotated
+  destructive because deleting an endpoint destroys its secret irrecoverably. Event names are a
+  zod enum, so a typo is refused locally with the catalog in the error instead of arriving as an
+  opaque 400. Webhook ids are UUID-checked for the same reason every other identifier is.
+
 ### Fixed
 - `tribeunal_list_tribes` no longer describes itself as public browsing: the description now
   says the list includes the private tribes you own or belong to — so it doubles as "find my

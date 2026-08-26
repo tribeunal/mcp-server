@@ -307,6 +307,31 @@ export class TribeunalAPIClient {
     return response.data;
   }
 
+  /**
+   * Backs tribeunal_create_webhook via POST /api/webhooks. The response is the
+   * ONLY place the signing secret ever appears (besides an explicit rotate), so
+   * it is returned to the caller verbatim rather than summarised away.
+   */
+  async createWebhook(data: { url: string; events: string[] }) {
+    const response = await this.client.post('/webhooks', data);
+    return response.data;
+  }
+
+  /** Backs tribeunal_list_webhooks via GET /api/webhooks. Never carries secrets. */
+  async listWebhooks() {
+    const response = await this.client.get('/webhooks');
+    return response.data;
+  }
+
+  /**
+   * Backs tribeunal_delete_webhook via DELETE /api/webhooks/{uuid}. Endpoints are
+   * owner-scoped: someone else's uuid answers 404, exactly like an unknown one.
+   */
+  async deleteWebhook(webhookId: string) {
+    const response = await this.client.delete(`/webhooks/${webhookId}`);
+    return response.data;
+  }
+
   // User endpoints
   async getUser(id: string) {
     const response = await this.client.get(`/users/${id}`);
