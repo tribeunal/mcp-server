@@ -37,6 +37,13 @@ import {
 } from '../tools/tribes.js';
 
 import {
+  CreateWebhookSchema,
+  ListWebhooksSchema,
+  DeleteWebhookSchema,
+  WEBHOOK_EVENTS,
+} from '../tools/webhooks.js';
+
+import {
   GetUserSchema,
 } from '../tools/users.js';
 
@@ -452,6 +459,46 @@ export const TOOL_DEFINITIONS = [
       required: ['tribeId', 'invitees'],
     },
   },
+  // Webhook tools
+  {
+    name: 'tribeunal_create_webhook',
+    title: 'Create webhook',
+    annotations: { title: 'Create webhook', readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    description: 'Register a URL that Tribeunal will POST your cases\' events to, so you can react to them without polling. Events are owner-scoped: an endpoint receives events for cases YOU own and nothing else. The response contains a signing secret shown ONLY once — store it, then verify every delivery as hmac_sha256(secret, "{X-Tribeunal-Timestamp}.{raw body}") against the hex in X-Tribeunal-Signature (format "v1=<hex>"). Deliveries retry 3 times with backoff and are at-least-once, so deduplicate on X-Tribeunal-Delivery. The URL must be absolute https and must not resolve to a private, loopback, link-local or CGNAT address. Maximum 10 endpoints per account.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', format: 'uri', maxLength: 2048, description: 'HTTPS URL that will receive the signed POST requests' },
+        events: {
+          type: 'array',
+          items: { type: 'string', enum: [...WEBHOOK_EVENTS] },
+          minItems: 1,
+          description: `Events to subscribe to. One or more of: ${WEBHOOK_EVENTS.join(', ')}`,
+        },
+      },
+      required: ['url', 'events'],
+    },
+  },
+  {
+    name: 'tribeunal_list_webhooks',
+    title: 'List webhooks',
+    annotations: { title: 'List webhooks', readOnlyHint: true, openWorldHint: false },
+    description: 'List your registered webhook endpoints with their subscribed events, whether each is active, and delivery health (last status code, consecutive failure count, last successful delivery). Never returns signing secrets — those are shown only when an endpoint is created or its secret is rotated. Use this to find an endpoint\'s uuid before deleting it.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'tribeunal_delete_webhook',
+    title: 'Delete webhook',
+    annotations: { title: 'Delete webhook', readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+    description: 'Permanently delete one of your webhook endpoints. Deliveries stop immediately and the signing secret is destroyed — re-registering the same URL issues a NEW secret, so any receiver still using the old one will fail verification. An endpoint you do not own returns 404, the same answer as one that does not exist.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        webhookId: { type: 'string', pattern: UUID_PATTERN, description: 'Webhook endpoint UUID to delete' },
+      },
+      required: ['webhookId'],
+    },
+  },
   // User tools
   {
     name: 'tribeunal_get_user',
@@ -865,6 +912,67 @@ export async function dispatchToolCall(
             {
               type: 'text',
               text: `Tribe created successfully!${shareLine}\n${JSON.stringify(tribe, null, 2)}`,
+            },
+          ],
+        };
+      }
+
+      // Webhook tools
+      case 'tribeunal_create_webhook': {
+        const p = CreateWebhookSchema.parse(params);
+        const endpoint = await apiClient.createWebhook({ url: p.url, events: [...p.events] });
+        // The secret is returned by the API exactly once. Say so plainly and put
+        // it on its own line: an agent that scrolls past it cannot get it back
+        // without rotating, which invalidates any receiver already configured.
+        return {
+          content: [
+            {
+              type: 'text',
+              text:
+                `Webhook registered for ${endpoint.url}\n` +
+                `Events: ${(endpoint.events ?? []).join(', ')}\n` +
+                `Endpoint id: ${endpoint.uuid}\n\n` +
+                `Signing secret: ${endpoint.secret}\n` +
+                'Store this secret now — it is not shown again. Verify each delivery as ' +
+                'hmac_sha256(secret, "{X-Tribeunal-Timestamp}.{raw body}") and compare it in ' +
+                'constant time against the hex after "v1=" in X-Tribeunal-Signature.',
+            },
+          ],
+        };
+      }
+
+      case 'tribeunal_list_webhooks': {
+        ListWebhooksSchema.parse(params);
+        const result = await apiClient.listWebhooks();
+        const items = result.items ?? [];
+        if (items.length === 0) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'No webhook endpoints registered. Create one with tribeunal_create_webhook.',
+              },
+            ],
+          };
+        }
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `${result.total ?? items.length} webhook endpoint(s):\n${JSON.stringify(items, null, 2)}`,
+            },
+          ],
+        };
+      }
+
+      case 'tribeunal_delete_webhook': {
+        const p = DeleteWebhookSchema.parse(params);
+        await apiClient.deleteWebhook(p.webhookId);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Webhook endpoint ${p.webhookId} deleted. Deliveries have stopped and its signing secret is gone.`,
             },
           ],
         };

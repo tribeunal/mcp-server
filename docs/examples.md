@@ -287,6 +287,65 @@ try {
 }
 ```
 
+## Webhook Examples
+
+### React to a Verdict Without Polling
+
+Register once, then let Tribeunal push the outcome to you:
+
+```typescript
+const registration = await client.callTool('tribeunal_create_webhook', {
+  url: 'https://my-service.example.com/hooks/tribeunal',
+  events: ['case.closed', 'vote.cast'],
+});
+// The response contains the signing secret ONCE. Store it before doing anything else.
+```
+
+Verify every delivery before trusting it — the signature is the only thing separating a real
+event from anyone who learned your URL:
+
+```typescript
+import crypto from 'crypto';
+
+app.post('/hooks/tribeunal', express.raw({ type: 'application/json' }), (req, res) => {
+  const timestamp = req.get('X-Tribeunal-Timestamp') ?? '';
+  const signature = req.get('X-Tribeunal-Signature') ?? '';
+
+  // Reject replays of an otherwise valid delivery.
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return res.sendStatus(400);
+
+  // Sign the RAW body — parsing and re-encoding would change the bytes.
+  const expected =
+    'v1=' +
+    crypto.createHmac('sha256', SECRET).update(`${timestamp}.${req.body}`).digest('hex');
+  const a = Buffer.from(expected);
+  const b = Buffer.from(signature);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return res.sendStatus(400);
+
+  const event = JSON.parse(req.body.toString());
+  if (event.event === 'case.closed' && event.verdict?.decided) {
+    console.log(`${event.case.title}: ${event.verdict.winningSides.map((s) => s.name).join(', ')}`);
+  }
+
+  // Deliveries are at-least-once — deduplicate on event.id before acting.
+  res.sendStatus(200);
+});
+```
+
+### Audit and Clean Up Endpoints
+
+```typescript
+const { items } = await client.callTool('tribeunal_list_webhooks', {});
+// items carry delivery health: lastStatusCode, failureCount, lastDeliveredAt — never secrets.
+
+for (const endpoint of items.filter((e) => e.failureCount > 10)) {
+  await client.callTool('tribeunal_delete_webhook', { webhookId: endpoint.uuid });
+}
+```
+
+Deleting an endpoint destroys its secret. Re-registering the same URL issues a new one, so
+update the receiver before you re-create it.
+
 ## Use Case: Decision Support Bot
 
 ```typescript

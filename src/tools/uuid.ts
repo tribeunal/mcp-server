@@ -18,7 +18,7 @@ export function isUuid(value: unknown): value is string {
   return typeof value === 'string' && UUID_RE.test(value);
 }
 
-function uuidMessage(kind: 'case' | 'side' | 'tribe'): string {
+function uuidMessage(kind: 'case' | 'side' | 'tribe' | 'webhook'): string {
   return `Must be a ${kind} UUID (the ${kind}'s "uuid" field, e.g. 8415a252-5e41-4db6-bd5d-ee5b5ad95dd4) — not a numeric id, slug, or name.`;
 }
 
@@ -39,6 +39,17 @@ export function sideUuid(description: string) {
  */
 export function tribeUuid(description: string) {
   return z.string().regex(UUID_RE, uuidMessage('tribe')).describe(description);
+}
+
+/**
+ * A zod string constrained to the UUID form, for a webhook endpoint identifier.
+ * Webhook endpoints are keyed by a uuid primary key and are owner-scoped, so a
+ * wrong-shaped id is indistinguishable from someone else's endpoint: both answer
+ * 404. Rejecting here says which field to use instead of returning a bare
+ * not-found the agent cannot act on.
+ */
+export function webhookUuid(description: string) {
+  return z.string().regex(UUID_RE, uuidMessage('webhook')).describe(description);
 }
 
 /**

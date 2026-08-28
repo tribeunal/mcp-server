@@ -106,8 +106,11 @@ test('list_tribe_members is advertised with a UUID pattern on tribeId', () => {
   assert.deepEqual(props.required, ['tribeId']);
 });
 
-test('the tool count is 35 including the new roster tool', () => {
-  assert.equal(TOOL_DEFINITIONS.length, 35, 'adding list_tribe_members brings the shared tool count to 35');
+test('the tool count is 38 including the new roster tool', () => {
+  // The count is pinned so a new tool cannot land without also updating the
+  // "N tools" claims in README.md, llms-install.md, worker/README.md,
+  // stdio-register.ts and mcp-agent.ts. Raised 35 -> 38 by the three webhook tools.
+  assert.equal(TOOL_DEFINITIONS.length, 38, 'the shared tool count is 38');
   assert.ok(TOOL_DEFINITIONS.find((d) => d.name === 'tribeunal_list_tribe_members'));
 });
 
