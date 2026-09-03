@@ -5,19 +5,46 @@ Control arm (`--arm without`), 2026-09-03, dev stack, eval identity `kuhn.kaylie
 One of four cases fails, and it fails because a tool does not exist yet rather than because the agent
 reasoned badly.
 
-## `invited-join` — FAIL
+## `invited-join` — FAIL (re-baselined after `tribeunal_join_jury` shipped)
+
+**First run, before the tool existed:** `seats-before-voting  ✗ join_jury@-1 before cast_vote@7`.
+`join_jury` could not be called because nothing exposed `POST /cases/{uuid}/jury/join`. The agent
+went to `cast_vote` and was refused, with no way to take a seat. That was a test of the server, not
+of the skill, which is why Increment 6 added the tool and this case was re-run.
+
+**Re-run with the tool available:** still FAIL, and for a far more interesting reason.
 
 | Grader | Result |
 | --- | --- |
-| `seats-before-voting` | ✗ `join_jury@-1 before cast_vote@7` |
+| `seats-before-voting` | ✗ `join_jury@-1 before cast_vote@-1` |
 
-`@-1` means `join_jury` was never called — it **cannot** be, because no tool exposes
-`POST /cases/{uuid}/jury/join` on the MCP surface today. The agent went to `cast_vote` and was
-refused, having no way to take a seat on an invited jury.
+Both `-1`: the agent neither joined nor voted. It refused, and its reasoning was verbatim:
 
-This is the MCP-only-invitee gap the plan describes, reproduced live. It is fixed in Increment 6 by
-`tribeunal_join_jury`, and this baseline is re-run there: once the tool exists, whether the agent
-knows to reach for it becomes a real test of the skill rather than a test of the server.
+> I checked before joining, and I'm not going to vote on this one — the invite doesn't appear to be
+> yours. … Its jury invite list has exactly one entry: `xander.kassulke@gmail.com`. Your account
+> (`kuhn.kaylie`, pententon@gmail.com) isn't on it
+
+The caution is admirable. The conclusion is wrong, and the mechanism matters:
+
+- `kuhn.kaylie`'s email **is** `xander.kassulke@gmail.com`. The invite was correct; the fixture was
+  correct. The agent was genuinely invited.
+- `pententon@gmail.com` is nowhere in Tribeunal. It is the email of the human operating the machine
+  the eval runs on, which sits in the agent's own ambient context.
+- `tribeunal_get_current_user` returns id, username, created_at, profile_url and is_ai — **and no
+  email**. Verified directly.
+
+So the agent tried to match an email-shaped invite against an identity the Tribeunal tools never
+gave it, filled the gap from its harness context, and locked itself out of a case it was entitled to
+judge.
+
+**This is a product gap, not only a skill gap.** There is no MCP-visible way for an invitee to
+confirm their own invitation: invites are listed by email, the acting identity exposes no email, and
+`jury_duty_dashboard` lists matchmaking assignments rather than invited-jury invitations (the run
+confirms this — the dashboard showed a different case entirely). Recorded as a follow-up.
+
+The skill therefore cannot teach "verify you were invited". It has to teach the opposite: the tools
+cannot confirm or deny it, so the person asking is the authority, and since the server does not
+enforce the invite list either, restraint is a matter of instruction rather than permission.
 
 ## Baseline passes
 

@@ -382,7 +382,30 @@ async function pool<T>(items: (() => Promise<T>)[], limit: number): Promise<T[]>
   return results;
 }
 
+/**
+ * A killed run must still hand back the rows it borrowed.
+ *
+ * `restoreFixtureState()` normally runs after the case pool, but a SIGTERM or
+ * SIGINT skips straight past that — which happened once and left the eval
+ * identity pinned at an exhausted free-vote budget, quietly poisoning every
+ * later voting case. Signals now drain the same restore queue before exiting.
+ */
+function installRestoreOnSignals(): void {
+  let restoring = false;
+  for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
+    process.on(signal, () => {
+      if (restoring) return;
+      restoring = true;
+      console.error(`\n${signal} — restoring mutated fixture state before exit`);
+      restoreFixtureState()
+        .catch((e) => console.error('restore failed:', e))
+        .finally(() => process.exit(130));
+    });
+  }
+}
+
 async function main(): Promise<void> {
+  installRestoreOnSignals();
   const { opts, fixtureOverrides } = parseArgs(process.argv.slice(2));
   const skill = String(opts.skill ?? '');
   if (!skill) { console.error('Usage: eval-skill.ts --skill <name> [--case <glob>] [--arm with|without|both]'); process.exit(2); }
@@ -432,9 +455,15 @@ async function main(): Promise<void> {
     return { name: caseName, arms: armResults, fixtures };
   });
 
-  const settled = await pool(jobs, concurrency);
+  let settled;
+  try {
+    settled = await pool(jobs, concurrency);
+  } finally {
+    // Runs on the failure path too: a fixture that throws mid-build has often
+    // already mutated a row.
+    await restoreFixtureState();
+  }
   cases.push(...settled);
-  await restoreFixtureState();
 
   // --- report ---
   let allPassed = true;
