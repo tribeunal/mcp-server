@@ -236,10 +236,20 @@ export async function buildFixtures(skill: string, caseName: string): Promise<Re
     case 'weighing-evidence/mark-analysis': {
       // Owned by the eval identity so it may mark; commented by someone else so
       // there is a comment it is allowed to mark.
+      //
+      // The other comment must be genuinely markable, or the case tests the
+      // wrong thing. It first carried a throughput-audit line written for the
+      // billing-service fixture, which had nothing to do with this case's
+      // question — and the agent correctly declined to mark an unanchored,
+      // irrelevant claim as evidence, which read as a skill failure and was
+      // not one. It now answers the question actually being asked.
       const uuid = await createCase('eval', { title: 'record to curate' });
       await callAs('admin', 'tribeunal_post_comment', {
         caseId: uuid,
-        text: 'The 2026 audit report shows a 14% drop in throughput after the change, measured over six weeks.',
+        text:
+          'Support-rota data for Q1 and Q2: Friday accounts for 22% of weekly ticket volume, and median '
+          + 'first-response time on Fridays already runs 40% above the weekly average with the current '
+          + 'five-day rota. Figures are from the helpdesk export attached to the Q2 operations review.',
       });
       return { case: uuid };
     }

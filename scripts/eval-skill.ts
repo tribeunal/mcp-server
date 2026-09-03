@@ -68,7 +68,7 @@ function readFrontmatter(path: string): { front: Front; body: string } {
 
 // --- transcript model --------------------------------------------------------
 
-interface ToolCall { name: string; input: unknown; }
+interface ToolCall { name: string; input: unknown; id?: string; result?: string; }
 interface Transcript {
   toolCalls: ToolCall[];
   finalText: string;
@@ -106,7 +106,7 @@ function parseStreamJson(raw: string): Transcript {
     if (ev.type === 'assistant' && ev.message?.content) {
       for (const block of ev.message.content) {
         if (block.type === 'tool_use') {
-          toolCalls.push({ name: block.name, input: block.input });
+          toolCalls.push({ name: block.name, input: block.input, id: block.id });
           if (toolAliases(block.name).includes('create_case')) sawCreateCase = true;
         }
       }
@@ -119,6 +119,12 @@ function parseStreamJson(raw: string): Transcript {
         const text = typeof block.content === 'string'
           ? block.content
           : (block.content ?? []).map((c: any) => c?.text ?? '').join('\n');
+        // Pair the result back onto its call. A judge that sees only inputs
+        // cannot check "did it mark the comment it wrote itself" — the id it
+        // needs is in the RESULT of post_comment, and asking it to grade
+        // without that produced a verdict that flipped between runs.
+        const call = toolCalls.find((c) => c.id === block.tool_use_id);
+        if (call) call.result = text;
         if (sawCreateCase && !createdCaseUuid) {
           const hit = UUID_RE.exec(text);
           if (hit) createdCaseUuid = hit[0];
@@ -215,7 +221,11 @@ async function runGrader(
 /** Second opinion from a cheap model, forced to answer PASS/FAIL first. */
 async function judge(criteria: string, transcript: Transcript): Promise<{ pass: boolean; reason: string }> {
   const toolList = transcript.toolCalls
-    .map((c) => `- ${c.name} ${JSON.stringify(c.input ?? {}).slice(0, 300)}`)
+    .map((c) => {
+      const input = JSON.stringify(c.input ?? {}).slice(0, 300);
+      const out = c.result ? `\n    -> ${c.result.replace(/\s+/g, ' ').slice(0, 300)}` : '';
+      return `- ${c.name} ${input}${out}`;
+    })
     .join('\n');
   const prompt = [
     'You are grading one transcript from an agent that used the Tribeunal tools.',

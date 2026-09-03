@@ -40,6 +40,44 @@ did not. Judge, verbatim:
 
 Claim, reasoning and the counter-case were all present without being asked for.
 
+## A third defect, found during GREEN
+
+`mark-analysis` regressed to FAIL once the skill was in place — the agent marked nothing and said
+so deliberately:
+
+> I marked neither, so the evidence set stays empty. That is the deliberate outcome, not an
+> omission.
+
+It disqualified its own comment by rule, correctly, and then rejected the other one on substance:
+
+> It has the shape of hard evidence — a named report, a percentage, a measurement window — and none
+> of the anchoring. … nothing in it ties the number to a four-day week.
+
+It was right. The fixture asked about a four-day working week while its comment cited a
+billing-service throughput audit written for a different fixture entirely. The agent even noticed
+the mismatch. Refusing to promote an irrelevant, unanchored claim into a jury's evidence set is
+correct curation, and scoring it as a skill failure would have been scoring the fixture's
+incoherence.
+
+With a comment that actually answers the case's question, both arms pass and the agent marks the
+other author's material while explicitly leaving its own alone.
+
+## A fourth: the judge could not see what it was asked to compare
+
+With the fixture fixed, `mark-analysis` still failed intermittently — and the judge said why:
+
+> The transcript shows the marked comment ID and the post_comment call, but does not show the
+> return value from post_comment needed to compare against it
+
+The criterion asks whether the agent marked its OWN comment. That comparison needs the id
+`post_comment` returned, which lives in the tool RESULT — and the runner was only passing tool
+NAMES and INPUTS to the judge. So the verdict depended on whether the agent happened to narrate
+both ids in its prose, and it flipped between runs.
+
+The runner now pairs each result back onto its call and shows both. Three consecutive reps then
+passed, each citing both ids explicitly. Per `superpowers:writing-skills`, variance is the metric:
+a grader that answers differently across identical runs is not measuring the skill.
+
 ## Two grader defects this run exposed
 
 Both were found by reading flagged matches by hand, which `superpowers:writing-skills` requires
