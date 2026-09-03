@@ -323,6 +323,30 @@ interface ArmResult {
   exitCode: number;
 }
 
+/** A 529 is weather, not a verdict: back off and try the arm again. */
+async function runArmWithRetries(
+  skill: string,
+  caseName: string,
+  prompt: string,
+  maxTurns: number,
+  timeoutS: number,
+  arm: 'with' | 'without',
+  keepTemp: boolean,
+  attempts = 3,
+): Promise<ArmResult> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await runArm(skill, caseName, prompt, maxTurns, timeoutS, arm, keepTemp);
+    } catch (e) {
+      const transient = (e as { transient?: boolean }).transient === true;
+      if (!transient || attempt >= attempts) throw e;
+      const backoffMs = 15_000 * attempt;
+      console.error(`  ${skill}/${caseName} (${arm}) refused service, retrying in ${backoffMs / 1000}s`);
+      await new Promise((r) => setTimeout(r, backoffMs));
+    }
+  }
+}
+
 async function runArm(
   skill: string,
   caseName: string,
@@ -349,6 +373,21 @@ async function runArm(
       throw new Error(`claude rejected a flag — harness is out of date:\n${stderr.slice(0, 400)}`);
     }
     const transcript = parseStreamJson(stdout);
+
+    // An arm that never got to run is not an arm that failed. A 529 from the
+    // API once produced "Bash n=0" and "absence of evidence is a FAIL" for a
+    // case that had simply been refused service. Only treat it as a transcript
+    // when the agent actually did or said something.
+    const refusedService = /\b(529|overloaded|rate.?limit|usage limit|session limit|api error)\b/i
+      .test(transcript.finalText);
+    if (transcript.toolCalls.length === 0 && (transcript.finalText.trim() === '' || refusedService)) {
+      const err = new Error(
+        `claude produced no usable transcript for ${skill}/${caseName} (${arm}), exit ${code}: `
+        + `${(transcript.finalText || stderr || stdout).slice(-300).replace(/\s+/g, ' ')}`,
+      );
+      (err as { transient?: boolean }).transient = true;
+      throw err;
+    }
     const graderDir = join(EVALS, skill, caseName, 'graders');
     const graderFiles = existsSync(graderDir)
       ? readdirSync(graderDir).filter((f) => f.endsWith('.md')).sort().map((f) => join(graderDir, f))
@@ -465,7 +504,7 @@ async function main(): Promise<void> {
       arms.map(async (a) => {
         let last: ArmResult | undefined;
         for (let r = 0; r < runs; r++) {
-          last = await runArm(skill, caseName, prompt, maxTurns, timeoutS, a, keepTemp);
+          last = await runArmWithRetries(skill, caseName, prompt, maxTurns, timeoutS, a, keepTemp);
           if (a === 'with' && last.graders.every((g) => g.passed)) break;
         }
         return [a, last!] as const;
