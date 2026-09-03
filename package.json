@@ -34,7 +34,8 @@
     "test": "jest",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
-    "test:unit": "node --import tsx --test tests/**/*.test.ts"
+    "test:unit": "node --import tsx --test tests/**/*.test.ts",
+    "gen:skills": "tsx scripts/gen-skill-reference.ts"
   },
   "keywords": [
     "mcp",

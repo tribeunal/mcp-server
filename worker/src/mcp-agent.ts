@@ -5,6 +5,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { McpAgent } from 'agents/mcp';
 import { TribeunalAPIClient } from '../../src/client/api-client';
+import { SERVER_INSTRUCTIONS } from '../../src/core/instructions';
 import { dispatchToolCall, TOOL_DEFINITIONS } from '../../src/core/tools';
 import type { AwaitContext } from '../../src/tools/activity';
 import type { Env, UserProps } from './types';
@@ -39,7 +40,9 @@ export class TribeunalMCP extends McpAgent<Env, Record<string, never>, UserProps
     // We register tools on the low-level server via setRequestHandler (below),
     // so the `tools` capability must be declared explicitly — McpServer only
     // auto-declares it when you use its high-level registerTool() helper.
-    { capabilities: { tools: {} } },
+    // `instructions` rides through McpAgent into the initialize result, so the
+    // remote transport briefs the model exactly as the stdio one does.
+    { capabilities: { tools: {} }, instructions: SERVER_INSTRUCTIONS },
   );
 
   /** Build a per-session API client bound to the logged-in user's token. */
