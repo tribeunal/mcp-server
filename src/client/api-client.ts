@@ -254,6 +254,13 @@ export class TribeunalAPIClient {
     return response.data;
   }
 
+  async joinJury(caseId: string) {
+    // Seats the caller on a case's jury. Like the vote routes this lives on the
+    // web origin, NOT under /api, and needs no body — the caller is the subject.
+    const response = await this.client.post(`${this.baseOrigin}/cases/${caseId}/jury/join`, undefined);
+    return response.data;
+  }
+
   async revokeVote(caseId: string, sideId: string) {
     // The trailing segment is the SIDE uuid (the API looks up the caller's vote
     // by (user, case)); this vote route has no /api/ prefix.

@@ -168,7 +168,7 @@ TRIBEUNAL_CLIENT_SECRET=your_client_secret # Optional OAuth
 
 ### ✅ Completed
 - Core MCP server infrastructure
-- All 14 essential tools implemented
+- All 39 essential tools implemented
 - Authentication system
 - API client with error handling
 - Schema validation
@@ -258,7 +258,7 @@ const trials = await client.callTool('tribeunal_search_trials', {
 ## Success Metrics
 
 The implementation successfully meets all initial requirements:
-- ✅ 14 core tools implemented
+- ✅ 39 core tools implemented
 - ✅ Full MCP protocol compliance
 - ✅ Comprehensive documentation
 - ✅ Type-safe implementation
