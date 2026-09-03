@@ -66,6 +66,14 @@ No manual install step is needed — `npx` fetches the package on first run.
 
 Call the `tribeunal_get_current_user` tool. A successful response returns the user's Tribeunal username. If it fails with 401, the API key is wrong or was revoked — generate a new one at https://tribeunal.com/profile/api-key.
 
+## Install the skills too
+
+The tools alone do not carry the workflows. Eight Agent Skills ship in
+[`skills/`](./skills/) — install them with the server (Claude Code:
+`/plugin marketplace add pentarim/tribeunal-mcp-server` then `/plugin install tribeunal`), or copy
+the directory into whatever your runtime reads. Read `using-tribeunal` first; it routes to the other
+seven.
+
 ## Notes for agents
 
 - 39 tools, all prefixed `tribeunal_`. Read-only tools are annotated `readOnlyHint: true`; `tribeunal_close_case` and `tribeunal_jury_duty_reject` are destructive (confirm with the user first).

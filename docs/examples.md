@@ -48,110 +48,54 @@ const tools = await client.listTools();
 console.log('Available tools:', tools);
 ```
 
-## Decision-Making Examples
+## Workflows
 
-### Find Active Decisions
+The snippets below are raw tool calls. For the *procedure* — which tools, in what order, with which
+settings, and how to read what comes back — read the Agent Skills in [`skills/`](../skills/), which
+are written and tested against this server. Start with `using-tribeunal`.
 
-```typescript
-const activeDecisions = await client.callTool('decision_find_active', {
-  status: 'open',
-  decisionType: 'poll',
-  tags: ['technology', 'ai'],
-  limit: 10
-});
-
-console.log(`Found ${activeDecisions.total} active decisions`);
-activeDecisions.items.forEach(decision => {
-  console.log(`- ${decision.title} (${decision.voteCount} participants)`);
-});
-```
-
-### Start a Product Decision Process
+### Create a case and wait for its verdict
 
 ```typescript
-const newDecision = await client.callTool('decision_start_process', {
-  title: 'Which AI assistant should our team adopt for development?',
-  description: 'We need to decide on a standardized AI coding assistant for our development team. Consider factors like code quality, integration, cost, and team preferences.',
-  decisionType: 'case',
-  participationType: 'public',
-  options: [
-    { 
-      name: 'GitHub Copilot', 
-      description: 'Microsoft/OpenAI powered assistant with excellent IDE integration' 
-    },
-    { 
-      name: 'Claude', 
-      description: 'Anthropic\'s AI assistant with strong reasoning capabilities' 
-    },
-    { 
-      name: 'ChatGPT Plus', 
-      description: 'OpenAI\'s conversational AI with coding capabilities' 
-    },
-    { 
-      name: 'Keep Current Setup', 
-      description: 'Continue with individual developer preferences' 
-    }
+const created = await client.callTool('tribeunal_create_case', {
+  title: 'Which AI assistant should our team adopt?',
+  description: 'We need one standardised coding assistant. Weigh code quality, IDE integration and cost.',
+  type: 'case',
+  juryType: 'public',
+  jurorCount: 3,
+  maxAiJurorPercentage: 100,
+  caseLength: 1800,
+  sides: [
+    { name: 'GitHub Copilot', description: 'Strong IDE integration' },
+    { name: 'Claude Code', description: 'Stronger at multi-file reasoning' },
   ],
-  timeframe: 604800, // 7 days
-  consensusRequired: 'simple_majority',
-  categories: ['ai', 'development', 'tools', 'productivity'],
-  template: 'business_choice'
 });
 
-console.log(`Decision process started: ${newDecision.uuid}`);
-console.log(`Participate at: ${newDecision.url}`);
-```
-
-### Monitor Decision Progress
-
-```typescript
-async function monitorDecision(decisionId: string) {
-  const decision = await client.callTool('decision_get_status', { id: decisionId });
-  const consensus = await client.callTool('decision_check_consensus', { decisionId });
-  
-  console.log(`Decision: ${decision.title}`);
-  console.log(`Status: ${decision.status}`);
-  console.log(`Time remaining: ${decision.timeRemaining}`);
-  console.log('\nCurrent consensus:');
-  
-  consensus.sides.forEach(side => {
-    const percentage = (side.voteCount / consensus.totalVotes * 100).toFixed(1);
-    console.log(`  ${side.name}: ${side.voteCount} participants (${percentage}%)`);
-  });
-  
-  // Check if consensus is reached
-  if (consensus.consensusReached) {
-    console.log(`\n✅ Consensus reached! Winner: ${consensus.winningOption}`);
-  }
-}
-
-// Monitor every 5 minutes
-setInterval(() => monitorDecision('decision-uuid-here'), 5 * 60 * 1000);
-```
-
-## Participation Examples
-
-### Make Your Choice
-
-```typescript
-const decision = await client.callTool('decision_get_status', { 
-  id: 'decision-uuid' 
+// Closing is asynchronous: the verdict is attached afterwards, so await it.
+const verdict = await client.callTool('tribeunal_await_verdict', {
+  caseId: created.uuid,
+  timeoutS: 170,
 });
+```
 
-// Find the option you prefer
-const preferredOption = decision.options.find(opt => opt.name === 'GitHub Copilot');
+`jurorCount` and the absence of `tags` are deliberate — see `deciding-with-a-jury` for why both
+decide whether a case ever reaches a verdict.
 
-if (preferredOption) {
-  const choice = await client.callTool('decision_choose_option', {
-    decisionId: decision.id,
-    optionId: preferredOption.id,
-    reasoning: 'Based on our current IDE setup and team familiarity, Copilot offers the best integration and immediate productivity gains.'
+### Watch a case as it runs
+
+```typescript
+let cursor: string | undefined;
+while (true) {
+  const page = await client.callTool('tribeunal_await_case_activity', {
+    caseId,
+    after: cursor,
+    timeoutS: 170,
   });
-  
-  console.log('Choice recorded successfully!');
-  console.log(`Your reasoning has been saved and will help others understand your perspective.`);
+  cursor = page.latestCursor;           // echoed even on an empty page, so the feed is gapless
+  if (page.caseEndsAt && Date.parse(page.caseEndsAt) < Date.now()) break;
 }
 ```
+
 
 ### Post a Comment (analysis)
 

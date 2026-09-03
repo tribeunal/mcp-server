@@ -13,7 +13,7 @@ dotenv.config();
 const server = new Server(
   {
     name: 'tribeunal-mcp-server',
-    version: '1.11.0',
+    version: '1.12.0',
   },
   {
     capabilities: {
