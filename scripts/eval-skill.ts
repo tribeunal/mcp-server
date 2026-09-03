@@ -243,6 +243,16 @@ async function judge(criteria: string, transcript: Transcript): Promise<{ pass: 
 
   const out = await run('claude', ['-p', prompt, '--model', 'haiku', '--max-turns', '1', '--output-format', 'text'], REPO, 180_000);
   const text = out.stdout.trim();
+
+  // A judge that could not run is NOT a judge that said no. Scoring a failed
+  // call as FAIL once turned a usage-limit message into a grader verdict —
+  // "You've hit your session limit" was recorded as the reason a skill failed.
+  // Throwing surfaces it as the infrastructure problem it is.
+  if (out.code !== 0 || !/^\s*(PASS|FAIL)\b/i.test(text)) {
+    throw new Error(
+      `llm judge did not return a verdict (exit ${out.code}): ${(text || out.stderr).slice(0, 200).replace(/\s+/g, ' ')}`,
+    );
+  }
   return { pass: /^\s*PASS\b/i.test(text), reason: text.slice(0, 300).replace(/\s+/g, ' ') };
 }
 

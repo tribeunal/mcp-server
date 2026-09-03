@@ -329,6 +329,54 @@ export async function buildFixtures(skill: string, caseName: string): Promise<Re
       return { secret, ts, sig_good: sigGood, body_good: bodyGood, body_tampered: bodyTampered };
     }
 
+
+    // --- convening-a-team-jury ---
+    case 'convening-a-team-jury/tribe-to-jury':
+      // The agent builds everything itself; a pre-made tribe would test nothing.
+      return {};
+
+    case 'convening-a-team-jury/resolve-tribe': {
+      // The eval identity belongs to no tribe by default, so "who is in my
+      // tribes" would answer "none" and the case would prove nothing. It owns
+      // this one, and the admin joins so the roster has a member who is NOT
+      // the chieftain — which is the distinction the case checks.
+      //
+      // Reused across runs rather than recreated. Creating one per run left the
+      // identity owning a pile of near-identical private tribes, and a later
+      // case then sensibly reused one instead of making its own — which read as
+      // a failure and was not. Fixtures that accumulate change other cases.
+      const existing = await psql(
+        `SELECT t.uuid FROM tribe t JOIN "user" u ON u.id = t.owner_id`
+        + ` WHERE u.username = 'kuhn.kaylie' AND t.name LIKE '%SKILLS GATE%' ORDER BY t.id LIMIT 1`,
+      );
+      if (existing) return { tribe: existing };
+
+      const out = await callAs('eval', 'tribeunal_create_tribe', {
+        name: `${GATE_TAG} platform crew`,
+        description: 'Standing group used by the Tribeunal skill evals to test roster reading.',
+        isPublic: false,
+      });
+      const tribe = firstUuid(out);
+      await callAs('eval', 'tribeunal_invite_tribe_members', { tribeId: tribe, invitees: ['testuser'] });
+      await callAs('admin', 'tribeunal_join_tribe', { tribeId: tribe });
+      return { tribe };
+    }
+
+    case 'convening-a-team-jury/leave-warning': {
+      // Owned by the ADMIN and private, with the eval identity joined as an
+      // ordinary member — leaving consumes the invitation, which is the
+      // irreversibility the case is about.
+      const out = await callAs('admin', 'tribeunal_create_tribe', {
+        name: `${GATE_TAG} invite-only circle`,
+        description: 'Private tribe used by the Tribeunal skill evals to test the leave warning.',
+        isPublic: false,
+      });
+      const tribe = firstUuid(out);
+      await callAs('admin', 'tribeunal_invite_tribe_members', { tribeId: tribe, invitees: ['kuhn.kaylie'] });
+      await callAs('eval', 'tribeunal_join_tribe', { tribeId: tribe });
+      return { tribe };
+    }
+
     default:
       return {};
   }
