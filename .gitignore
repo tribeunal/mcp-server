@@ -46,5 +46,8 @@ temp/
 worker/.dev.vars
 worker/.wrangler/
 
-# Local editor / agent config
+# Local editor / agent config. `.mcp.json` is this repo's own dev MCP set
+# (it hardcodes an absolute worker path); the repo root is also the plugin
+# root, so a tracked copy would install those servers for every plugin user.
 .claude/
+.mcp.json
