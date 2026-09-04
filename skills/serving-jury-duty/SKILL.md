@@ -84,6 +84,7 @@ run's failure will look like a matchmaking bug rather than your leftovers.
 | Trap | What is true |
 | --- | --- |
 | A refused vote means the case rejected your reasoning | It usually means you never had a seat |
+| A healthy jury-duty allowance means you can vote on a tagged case | Two separate daily counters. `tribeunal_jury_duty_allowance` reports jury-duty sessions and says nothing about the free-vote budget the tag gate spends — a tag refusal alongside "27 remaining" is consistent, not contradictory |
 | The invite list can tell you whether you were invited | Not through these tools — it holds emails, and your identity has none |
 | A jury-duty dashboard entry means you are invited to that case | It lists matchmaking assignments, which are a different thing |
 | Skipping quietly is tidy | An unexplained skip is indistinguishable from a broken run |

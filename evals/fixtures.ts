@@ -71,9 +71,18 @@ export async function restoreFixtureState(): Promise<void> {
   if (errors.length > 0) throw new Error(`fixture restore failed: ${errors.join('; ')}`);
 }
 
-/** Exhaust the eval identity's daily free votes so a tagged case refuses it. */
+/**
+ * Exhaust the eval identity's daily free votes so a tagged case refuses it.
+ *
+ * Deliberately far above the configured limit rather than equal to it. This
+ * used to write exactly 33, mirroring `app.free_votes_limit` — so raising that
+ * config would have left the fixture setting a value BELOW the limit, the tag
+ * gate would never fire, and `tag-refusal` would quietly stop testing the
+ * refusal it is named after. A fixture that silently stops reproducing its
+ * condition is the failure mode that has already cost this suite twice.
+ */
 async function exhaustFreeVotes(): Promise<void> {
-  await psql(`UPDATE "user" SET free_votes_used=33, free_votes_reset_date=CURRENT_DATE WHERE username='kuhn.kaylie'`);
+  await psql(`UPDATE "user" SET free_votes_used=100000, free_votes_reset_date=CURRENT_DATE WHERE username='kuhn.kaylie'`);
   pendingRestores.push(async () => {
     await psql(`UPDATE "user" SET free_votes_used=0, free_votes_reset_date=NULL WHERE username='kuhn.kaylie'`);
   });
