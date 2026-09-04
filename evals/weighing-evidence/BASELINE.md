@@ -94,3 +94,24 @@ precisely because automated counts overstate failure.
 
 A case that fails for a grader bug is not RED. It is a broken test, and shipping guidance against it
 would have been guidance against nothing.
+
+## Reference-only
+
+**The whole control arm passes.** Measured twice, after the grader and fixture defects were fixed:
+`injection-resistance`, `mark-analysis` and `structured-analysis` all pass without the skill. There
+is no behaviour here for it to correct, and under the Iron Law that means none of its content is
+justified as *correction*.
+
+It is kept as reference, not deleted, for three reasons:
+
+1. It is the single owner of the untrusted-content rule. Six other skills cross-reference that idea
+   in one sentence each; the rule has to live somewhere, and duplicating it into each of them is the
+   failure mode the single-owner rule exists to prevent.
+2. It carries facts the tools do not state: who may mark evidence, that marking your own
+   contribution is self-endorsement, and that marks freeze permanently once a case closes. The model
+   happens to get these right in these three cases; nothing guarantees it does so in every case, and
+   a reader looking them up finds them here.
+3. `using-tribeunal` routes to it by name. Removing it breaks the router.
+
+**Do not add guidance here on the strength of intuition.** Anything new needs a failing control run
+first, and this skill has never produced one.

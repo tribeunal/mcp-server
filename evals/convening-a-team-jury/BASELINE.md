@@ -73,3 +73,22 @@ sensibly reused one instead of creating its own, and its `create_tribe` grader s
 failure. The better behaviour looked like the bug. The fixture now reuses an existing gate tribe,
 and the grader asks what the case actually cares about — that the group backing the jury is private
 — rather than demanding a particular tool call.
+
+## Reference-only
+
+**The whole control arm passes**, re-measured after the graders changed: `tribe-to-jury`,
+`resolve-tribe` and `leave-warning` all pass without the skill. The agent resolves tribes before
+reading a roster, reports the chieftain separately, warns before an irreversible leave, and reuses an
+existing private tribe rather than duplicating one — all unaided.
+
+Kept as reference because it carries two facts the tools emit and never explain, both found during
+GREEN and both invisible to an agent that has not been told:
+
+- A tribe's privacy arrives as `type`: **1 public, 2 private**, with no legend in the response.
+- `owner` serialises as the constant `/api/users/me` on every tribe, so reading it to determine
+  ownership gives the same answer every time.
+
+It is also a router target from `using-tribeunal`.
+
+**Do not add guidance here on the strength of intuition.** This skill has never produced a failing
+control run; anything new needs one first.

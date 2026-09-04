@@ -248,12 +248,16 @@ async function judge(criteria: string, transcript: Transcript): Promise<{ pass: 
   // call as FAIL once turned a usage-limit message into a grader verdict —
   // "You've hit your session limit" was recorded as the reason a skill failed.
   // Throwing surfaces it as the infrastructure problem it is.
-  if (out.code !== 0 || !/^\s*(PASS|FAIL)\b/i.test(text)) {
+  // Judges answer "**PASS**" as often as "PASS": the verdict is frequently
+  // wrapped in markdown emphasis, and a pattern that ignores that rejects a
+  // perfectly good verdict as "no verdict returned".
+  const verdict = /^\s*[*_#>`\s]*(PASS|FAIL)\b/i.exec(text);
+  if (out.code !== 0 || !verdict) {
     throw new Error(
       `llm judge did not return a verdict (exit ${out.code}): ${(text || out.stderr).slice(0, 200).replace(/\s+/g, ' ')}`,
     );
   }
-  return { pass: /^\s*PASS\b/i.test(text), reason: text.slice(0, 300).replace(/\s+/g, ' ') };
+  return { pass: verdict[1].toUpperCase() === 'PASS', reason: text.slice(0, 300).replace(/\s+/g, ' ') };
 }
 
 // --- process helper ----------------------------------------------------------
