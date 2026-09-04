@@ -2,6 +2,18 @@
 
 Control arm (`--arm without`), 2026-09-03, dev stack, eval identity `kuhn.kaylie`.
 
+## `smoke` — FAIL
+
+The one case in this suite that fails without the skill, and the reason the skill exists:
+
+| Grader | Control | With skill |
+| --- | --- | --- |
+| `loads-the-skill` | ✗ `Skill input~/using-tribeunal/ n=0` | · `n=1` |
+
+Verbatim: the control arm never invoked the skill, because there was none to invoke. It tests the
+only thing the three contract cases cannot — that the entry point **loads and routes** — and it is
+what makes this a router rather than a document nobody opens.
+
 ## Baseline passes
 
 **All three contract cases pass without the skill.** Under the Iron Law of

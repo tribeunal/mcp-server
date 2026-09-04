@@ -231,13 +231,26 @@ async function runGrader(
 
 /** Second opinion from a cheap model, forced to answer PASS/FAIL first. */
 async function judge(criteria: string, transcript: Transcript): Promise<{ pass: boolean; reason: string }> {
-  const toolList = transcript.toolCalls
-    .map((c) => {
-      const input = JSON.stringify(c.input ?? {}).slice(0, 300);
-      const out = c.result ? `\n    -> ${c.result.replace(/\s+/g, ' ').slice(0, 300)}` : '';
-      return `- ${c.name} ${input}${out}`;
-    })
-    .join('\n');
+  // Results were cut to 300 chars, which for a case payload stops after uuid
+  // and title — so a judge asked "were only votable cases offered?" could not
+  // see `timeLeft` or `status` and failed BOTH arms for absent evidence it had
+  // been denied. Showing results is only useful if the deciding fields survive.
+  const RESULT_CHARS = 1500;
+  const TOOL_SECTION_CHARS = 60_000;
+  const rendered = transcript.toolCalls.map((c) => {
+    const input = JSON.stringify(c.input ?? {}).slice(0, 400);
+    const out = c.result ? `\n    -> ${c.result.replace(/\s+/g, ' ').slice(0, RESULT_CHARS)}` : '';
+    return `- ${c.name}${c.failed ? ' [REFUSED]' : ''} ${input}${out}`;
+  });
+  let toolList = rendered.join('\n');
+  if (toolList.length > TOOL_SECTION_CHARS) {
+    // Keep the ends: the first calls establish what was looked up, the last
+    // ones carry what the answer was built from.
+    const head = rendered.slice(0, Math.ceil(rendered.length / 2));
+    const tail = rendered.slice(-Math.floor(rendered.length / 4) || -1);
+    toolList = `${head.join('\n')}\n… (${rendered.length - head.length - tail.length} calls elided) …\n${tail.join('\n')}`
+      .slice(0, TOOL_SECTION_CHARS);
+  }
   const prompt = [
     'You are grading one transcript from an agent that used the Tribeunal tools.',
     'Answer with PASS or FAIL on the first line, then one sentence of reason.',
