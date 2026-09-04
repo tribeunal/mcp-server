@@ -44,7 +44,12 @@ test('join_jury is advertised as a non-destructive write with a UUID pattern', (
   assert.ok(def, 'the join tool must be advertised to clients');
   const a = def.annotations as { readOnlyHint?: boolean; destructiveHint?: boolean; openWorldHint?: boolean };
   assert.equal(a.readOnlyHint, false);
-  assert.equal(a.destructiveHint, false, 'taking a seat is reversible and destroys nothing');
+  // Additive per the MCP definition — it creates a Member row and destroys
+  // nothing — but NOT reversible: no tool and no route removes a jury seat, and
+  // seating the last juror on a wait-mode case opens it and starts its clock.
+  // Clients gate confirmation prompts on this hint, so if that side effect ever
+  // needs a prompt, this is the line to revisit.
+  assert.equal(a.destructiveHint, false, 'joining is additive: it creates a seat rather than removing one');
   assert.equal(a.openWorldHint, false);
 
   const schema = def.inputSchema as { properties: Record<string, { pattern?: string }>; required: readonly string[] };

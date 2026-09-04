@@ -321,6 +321,9 @@ function scaffold(skill: string, arm: 'with' | 'without'): string {
 
 interface ArmResult {
   graders: GraderResult[];
+  /** How many reps ran, and how many of them had at least one failing grader. */
+  reps?: number;
+  failedReps?: number;
   toolCalls: string[];
   finalText: string;
   created_case_uuid?: string;
@@ -506,12 +509,19 @@ async function main(): Promise<void> {
     // call and only fits the gate's budget when the control runs alongside.
     const settled = await Promise.all(
       arms.map(async (a) => {
-        let last: ArmResult | undefined;
+        // Worst-of-N, for BOTH arms. This used to stop the `with` arm at the
+        // first passing rep and keep only the last `without` rep — a best-of-N
+        // that hides a flaky skill, and a last-of-N that throws four fifths of
+        // the control evidence away. `--runs` exists for micro-testing wording,
+        // where variance is the whole signal, so a single failing rep is the
+        // answer worth reporting.
+        const reps: ArmResult[] = [];
         for (let r = 0; r < runs; r++) {
-          last = await runArmWithRetries(skill, caseName, prompt, maxTurns, timeoutS, a, keepTemp);
-          if (a === 'with' && last.graders.every((g) => g.passed)) break;
+          reps.push(await runArmWithRetries(skill, caseName, prompt, maxTurns, timeoutS, a, keepTemp));
         }
-        return [a, last!] as const;
+        const worst = reps.find((rep) => rep.graders.some((g) => !g.passed)) ?? reps[reps.length - 1];
+        const failedReps = reps.filter((rep) => rep.graders.some((g) => !g.passed)).length;
+        return [a, { ...worst, reps: reps.length, failedReps }] as const;
       }),
     );
     for (const [a, r] of settled) armResults[a] = r;

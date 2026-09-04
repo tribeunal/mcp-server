@@ -26,7 +26,8 @@ npx tsx scripts/eval-skill.ts --skill serving-jury-duty --case tag-refusal --arm
 Exit status is 0 only when every `with`-arm grader passed. Results land in `evals/results/<timestamp>/`
 (gitignored) and, with `--json <path>`, wherever you ask.
 
-Flags: `--skill` · `--case <glob>` · `--arm with|without|both` · `--runs N` · `--concurrency N`
+Flags: `--skill` · `--case <glob>` · `--arm with|without|both` · `--runs N` (worst-of-N: a
+single failing rep is what gets reported, for both arms) · `--concurrency N`
 (default 3) · `--keep-temp` · `--json <path>` · `--fixture k=v` to pin a fixture instead of building it.
 
 **Two identities, on purpose.** Fixtures are authored by the admin key; the agent under test always runs
