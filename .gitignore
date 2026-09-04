@@ -8,6 +8,9 @@ dist/
 *.d.ts
 *.d.ts.map
 
+# ...except skill helper scripts, which are shipped source, not build output.
+!skills/**/scripts/*.js
+
 # Environment files
 .env
 .env.local
@@ -34,6 +37,7 @@ yarn-error.log*
 # Testing
 coverage/
 .nyc_output/
+evals/results/
 
 # Temporary files
 tmp/
@@ -43,5 +47,8 @@ temp/
 worker/.dev.vars
 worker/.wrangler/
 
-# Local editor / agent config
+# Local editor / agent config. `.mcp.json` is this repo's own dev MCP set
+# (it hardcodes an absolute worker path); the repo root is also the plugin
+# root, so a tracked copy would install those servers for every plugin user.
 .claude/
+.mcp.json

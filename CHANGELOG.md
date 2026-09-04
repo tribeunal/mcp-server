@@ -1,6 +1,38 @@
 # Tribeunal MCP Server Changelog
 
-## [Unreleased]
+## [1.12.0]
+
+### Added
+- **Eight Agent Skills** (`skills/`) — the procedural layer over these tools. Each names which
+  tools to call, in what order, with which settings, how to read the result and what to do when a
+  call is refused: `using-tribeunal` (entry point and router), `deciding-with-a-jury`,
+  `acting-on-verdicts`, `serving-jury-duty`, `weighing-evidence`, `convening-a-team-jury`,
+  `arbitrating-a-dispute`, `wiring-webhooks`. Every skill was written against a recorded
+  no-skill failure that it removes, and each ships eval cases (`evals/`) that replay both arms.
+- **Claude Code plugin + one-plugin marketplace** at the repo root, so
+  `/plugin marketplace add pentarim/tribeunal-mcp-server` then `/plugin install tribeunal` brings
+  the hosted server and all eight skills together. The MCP server is declared inline in
+  `plugin.json` rather than through a root `.mcp.json`, which is this repo's own developer config.
+- **`tribeunal_join_jury`** — seats the caller on a case's jury (`POST /cases/{uuid}/jury/join`).
+  Closes the MCP-only-invitee gap: an agent invited to an invited-jury case previously had its vote
+  refused with no tool able to take a seat. Tool count 38 -> 39. The server does not enforce the
+  invite list, and the tool's description says so.
+- **Server `instructions`** on both transports, returned in the initialize result: ids are UUIDs,
+  check `timeLeft` rather than `state`, verdicts are asynchronous, a private case's `url` 404s, and
+  where the skills live.
+- `skills/using-tribeunal/references/tools.md`, generated from `TOOL_DEFINITIONS` by
+  `npm run gen:skills`, with a drift test that fails when the committed table goes stale.
+- `skills/wiring-webhooks/scripts/verify-signature.js` — verifies a delivery's signature and
+  timestamp, checked against a real delivery.
+- `scripts/eval-skill.ts` — two-arm eval runner (`with` / `without` the skill), five grader types,
+  dev-only.
+
+### Changed
+- `docs/examples.md` no longer shows `decision_*` tool names, which have not existed for some time.
+- README and `llms-install.md` lead with the skills and the install one-liner.
+- `server.json` reported version 1.7.0 and 34 tools; `SUMMARY.md` reported 14. Both now say 39.
+
+## [1.11.0]
 
 ### Added
 - `tribeunal_create_case` gains `arbitrationMode`, `decisionRequirement` and `minVotes`.

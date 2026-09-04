@@ -51,6 +51,7 @@ import {
   JuryDutyAcceptSchema,
   JuryDutyRejectSchema,
   JuryDutyHistorySchema,
+  JoinJurySchema,
   InviteJurorsSchema,
 } from '../tools/jury-duty.js';
 
@@ -613,6 +614,20 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'tribeunal_join_jury',
+    title: 'Join a case jury',
+    annotations: { title: 'Join a case jury', readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    description:
+      "Seat yourself on a case's jury. Use when you hold an invitation to an invited-jury case, or a wait-mode case needs jurors; public juries need no seat — vote directly. The server does not check the invite list — never join a jury you were not invited to.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        caseId: { type: 'string', pattern: UUID_PATTERN, description: 'Case UUID of the jury to join' },
+      },
+      required: ['caseId'],
+    },
+  },
+  {
     name: 'tribeunal_invite_jurors',
     title: 'Invite jurors',
     annotations: { title: 'Invite jurors', readOnlyHint: false, destructiveHint: false, openWorldHint: false },
@@ -1090,6 +1105,19 @@ export async function dispatchToolCall(
         const p = JuryDutyHistorySchema.parse(params);
         const history = await apiClient.getJuryDutyHistory(p.days);
         return { content: [{ type: 'text', text: JSON.stringify(history, null, 2) }] };
+      }
+
+      case 'tribeunal_join_jury': {
+        const p = JoinJurySchema.parse(params);
+        const result = await apiClient.joinJury(p.caseId);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `${result.message ?? 'Joined jury'}\n\n${JSON.stringify(result, null, 2)}`,
+            },
+          ],
+        };
       }
 
       case 'tribeunal_invite_jurors': {

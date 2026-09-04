@@ -1,0 +1,14 @@
+{
+  "_comment": "Copy to a private file and fill in dev keys. The eval runner writes its own copy of this into a temp dir; nothing here is read at run time. NEVER point this at production.",
+  "mcpServers": {
+    "tribeunal": {
+      "command": "npx",
+      "args": ["tsx", "src/index.ts"],
+      "env": {
+        "TRIBEUNAL_API_BASE_URL": "https://tribeunal.test/api",
+        "TRIBEUNAL_API_KEY": "<your dev API key>",
+        "TRIBEUNAL_VERIFY_SSL": "false"
+      }
+    }
+  }
+}

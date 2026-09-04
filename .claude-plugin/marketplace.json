@@ -1,0 +1,15 @@
+{
+  "name": "tribeunal",
+  "owner": {
+    "name": "Pentarim",
+    "url": "https://tribeunal.com"
+  },
+  "plugins": [
+    {
+      "name": "tribeunal",
+      "source": "./",
+      "description": "The Tribeunal MCP server plus eight Agent Skills for creating cases, serving jury duty, weighing evidence, arbitrating disputes and wiring webhooks.",
+      "version": "1.12.0"
+    }
+  ]
+}

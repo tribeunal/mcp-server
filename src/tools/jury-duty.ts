@@ -25,6 +25,12 @@ export const JuryDutyHistorySchema = z.object({
     .describe('Number of days of allowance history to retrieve'),
 });
 
+// Seating yourself on a case's jury. The caller is the subject, so a case UUID
+// is the whole input.
+export const JoinJurySchema = z.object({
+  caseId: caseUuid('Case UUID of the jury to join'),
+});
+
 // Jury invitations (case owner). Either an explicit invitees list or a tribeId
 // (invite the whole tribe — every member plus the chieftain) is required; both may
 // be given and are unioned, with the backend deduping. The refine enforces the

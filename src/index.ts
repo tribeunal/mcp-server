@@ -3,6 +3,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import dotenv from 'dotenv';
 import { createApiClientFromEnv } from './client/from-env.js';
+import { SERVER_INSTRUCTIONS } from './core/instructions.js';
 import { registerTools } from './core/stdio-register.js';
 
 // Load environment variables
@@ -12,12 +13,15 @@ dotenv.config();
 const server = new Server(
   {
     name: 'tribeunal-mcp-server',
-    version: '1.11.0',
+    version: '1.12.0',
   },
   {
     capabilities: {
       tools: {},
     },
+    // Returned in the initialize result so clients can brief the model before
+    // the first tool call. Kept byte-identical with the worker transport.
+    instructions: SERVER_INSTRUCTIONS,
   }
 );
 

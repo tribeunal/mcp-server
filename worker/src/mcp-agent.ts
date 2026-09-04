@@ -5,6 +5,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { McpAgent } from 'agents/mcp';
 import { TribeunalAPIClient } from '../../src/client/api-client';
+import { SERVER_INSTRUCTIONS } from '../../src/core/instructions';
 import { dispatchToolCall, TOOL_DEFINITIONS } from '../../src/core/tools';
 import type { AwaitContext } from '../../src/tools/activity';
 import type { Env, UserProps } from './types';
@@ -15,14 +16,14 @@ import type { Env, UserProps } from './types';
  * Authentication is handled upstream by `@cloudflare/workers-oauth-provider`
  * (see `index.ts` + `auth0-handler.ts`): by the time `init()` runs, the user has
  * completed Auth0 Universal Login and `this.props` carries their Auth0 access
- * token. Every one of the 38 shared tools is therefore executed AS the
+ * token. Every one of the 39 shared tools is therefore executed AS the
  * logged-in human — the API client forwards `props.upstreamAccessToken` as a
  * Bearer token, which the Symfony resource server validates and maps to that
  * user.
  *
  * Tools are registered on the low-level MCP `Server` (exposed by `McpServer` as
  * `.server`) using the SAME JSON-Schema `TOOL_DEFINITIONS` and `dispatchToolCall`
- * the stdio transport uses. This keeps the 38 tools byte-identical across both
+ * the stdio transport uses. This keeps the 39 tools byte-identical across both
  * transports and sidesteps re-deriving Zod shapes for the high-level helper.
  *
  * The three agent-await tools long-poll: their handler blocks for up to
@@ -34,12 +35,14 @@ export class TribeunalMCP extends McpAgent<Env, Record<string, never>, UserProps
   server = new McpServer(
     {
       name: 'tribeunal-mcp-server',
-      version: '1.11.0',
+      version: '1.12.0',
     },
     // We register tools on the low-level server via setRequestHandler (below),
     // so the `tools` capability must be declared explicitly — McpServer only
     // auto-declares it when you use its high-level registerTool() helper.
-    { capabilities: { tools: {} } },
+    // `instructions` rides through McpAgent into the initialize result, so the
+    // remote transport briefs the model exactly as the stdio one does.
+    { capabilities: { tools: {} }, instructions: SERVER_INSTRUCTIONS },
   );
 
   /** Build a per-session API client bound to the logged-in user's token. */
@@ -55,7 +58,7 @@ export class TribeunalMCP extends McpAgent<Env, Record<string, never>, UserProps
   async init(): Promise<void> {
     const lowLevel = this.server.server;
 
-    // tools/list — advertise the shared 38 tool definitions verbatim.
+    // tools/list — advertise the shared 39 tool definitions verbatim.
     lowLevel.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: TOOL_DEFINITIONS as unknown as Array<{
         name: string;

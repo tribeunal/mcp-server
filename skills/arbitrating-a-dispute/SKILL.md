@@ -1,0 +1,107 @@
+---
+name: arbitrating-a-dispute
+description: Use when two parties need a ruling that someone outside the argument will act on — a contested invoice, a delivery dispute, a contract term, a payout someone has to release — or when a request mentions arbitration, a binding decision, or a verdict a contract points at. Covers the settings that make a verdict relied upon, what the case owner gives up, and what to do when a case ends without a ruling.
+---
+
+# Arbitrating a dispute
+
+Arbitration mode turns a case from an opinion into a finding someone else can act on. It does that
+by taking powers away from the person who opened it.
+
+## When to use
+
+When the outcome will be relied upon by a party who was not in the room: money moves, a contract
+clause resolves, an obligation is settled. For an ordinary decision, `deciding-with-a-jury` is the
+right tool and this one is overhead.
+
+## Checklist
+
+- [ ] Capture both parties' positions and the remedies each wants
+- [ ] Make the sides the possible **remedies**, not the parties
+- [ ] Create with the binding settings below — all of them, explicitly
+- [ ] Let the parties put their evidence in as comments
+- [ ] Wait it out; you cannot close it yourself
+- [ ] Read the verdict, including the outcomes that are not rulings
+
+## Intake
+
+Write the case so a juror who has never heard of either party can decide it: what was agreed, what
+happened, what each side claims, and what is actually in dispute. The description is the whole
+brief.
+
+You will rarely have every fact, and that is not a reason to stall. **Build the brief from what you
+were given and name the gaps inside the description** — "neither party has supplied the delivery
+log" tells a jury something true and lets it weigh the claims accordingly. File the case, then say
+what you assumed and what would sharpen it. Stop and ask only when there is no describable dispute
+at all: no positions, or no remedy anyone is asking for.
+
+**Sides are remedies.** "Refund in full" and "Partial credit" are decidable; "Alice" and "Bob" are
+not — they ask a jury to pick a person, and the answer cannot be acted on without interpretation.
+Two to ten of them, mutually exclusive.
+
+## What makes a ruling binding
+
+State every one of these. A dispute settled by an unstated default is a dispute settled by accident.
+
+| Setting | Why |
+| --- | --- |
+| `arbitrationMode: true` | Turns on everything below and bars the owner from its jury |
+| `minVotes` at least 2 | Without a real quorum a single vote can decide a contested payout |
+| `decisionRequirement` | Says what counts as agreement — a plurality is rarely enough for money |
+| `jurorCount` | Size it to who will actually seat, or it never opens |
+| `maxAiJurorPercentage` | Decide deliberately whether AI jurors may rule on this |
+| Voting window | Long enough that jurors can read evidence, not just react |
+
+Guest voting cannot be combined with arbitration. Leave tags off: they gate who may vote, and a
+dispute should not be settled by whoever happens to hold a tag.
+
+## What the owner gives up
+
+Creating an arbitration case costs you your standing in it. You cannot vote on it, you cannot join
+its jury, and you cannot close it early — an admin can, or it closes at its deadline. Those
+refusals are structural and permanent; retrying is wasted effort.
+
+This is the point rather than a limitation. A verdict the interested party could have voted in is
+not one an outside party can rely on.
+
+Once the case closes, its evidence marks freeze so the record it was judged on stops moving. A
+refusal on that ground is final.
+
+## When there is no ruling
+
+A finished case can end without deciding anything, and reporting that as a win is the worst
+available failure here.
+
+| Outcome | Meaning | What to do |
+| --- | --- | --- |
+| Quorum not met | Fewer votes than required | Re-file with a longer window, or more jurors, or a lower minimum |
+| Requirement not met | Enough votes, not enough agreement | Re-file with a weaker requirement, or accept there is no consensus |
+| Undecided, no reason given | A genuine tie or an empty case | Re-file; consider whether the sides were really exclusive |
+
+Re-filing is a new case. Say plainly that the first produced no ruling, and never present its
+percentages as a result — a lone vote is not a mandate.
+
+## What a verdict is
+
+The jury's finding, signed and timestamped. It is not enforcement: Tribeunal never holds the money,
+never releases the escrow, never touches the contract. Whatever acts on the ruling is yours, and
+this separation is what lets a verdict be trusted — a body that ruled *and* held the stakes would
+be neither.
+
+Disclose that a jury may include AI jurors when a party would care.
+
+## Working with the rest
+
+Wait for the outcome with `acting-on-verdicts`. Read and curate the parties' evidence with
+`weighing-evidence`. A machine party that has to act the moment the ruling lands should subscribe
+rather than poll — see `wiring-webhooks`.
+
+## Gotchas
+
+| Trap | What is true |
+| --- | --- |
+| The owner can close their own arbitration case early | They cannot. An admin can, or the deadline does |
+| A refusal to vote is a bug worth retrying | The owner bar is structural and permanent |
+| Any verdict is a ruling | Quorum and requirement failures decide nothing |
+| Evidence can be tidied after the ruling | Marks freeze at close, permanently |
+| Arbitration can reach a wider crowd with guest votes | The two cannot be combined |
