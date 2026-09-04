@@ -373,13 +373,28 @@ async function runArmWithRetries(
   keepTemp: boolean,
   attempts = 3,
 ): Promise<ArmResult> {
+  // Bounded by wall clock, not just attempt count. A case with a 480s budget
+  // retried three times needs ~25 minutes, which outruns any sane row budget —
+  // so a degraded API used to consume the whole allowance and then report a
+  // timeout, saying nothing about why. Two case-budgets is the ceiling; past
+  // that it fails fast and names the cause.
+  const deadline = Date.now() + 2 * timeoutS * 1000;
   for (let attempt = 1; ; attempt++) {
     try {
       return await runArm(skill, caseName, prompt, maxTurns, timeoutS, arm, keepTemp);
     } catch (e) {
       const transient = (e as { transient?: boolean }).transient === true;
-      if (!transient || attempt >= attempts) throw e;
       const backoffMs = 15_000 * attempt;
+      const noRoom = Date.now() + backoffMs + timeoutS * 1000 > deadline;
+      if (!transient || attempt >= attempts || noRoom) {
+        if (transient && noRoom) {
+          throw new Error(
+            `${skill}/${caseName} (${arm}) kept being refused service and ran out of budget `
+            + `after ${attempt} attempt(s) — upstream problem, not a skill result: ${(e as Error).message}`,
+          );
+        }
+        throw e;
+      }
       console.error(`  ${skill}/${caseName} (${arm}) refused service, retrying in ${backoffMs / 1000}s`);
       await new Promise((r) => setTimeout(r, backoffMs));
     }
