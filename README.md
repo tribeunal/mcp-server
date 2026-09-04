@@ -126,6 +126,7 @@ MCP has no server→model push that reaches a running turn, so the await tools *
 - `tribeunal_get_user` / `get_current_user`
 - `tribeunal_jury_duty_status` / `_allowance` / `_dashboard` / `_start` / `_cancel` / `_accept` / `_reject` / `_history`
 - `tribeunal_invite_jurors` — invite users (username or email) to the jury of a case you own, or pass a `tribeId` to recruit a whole tribe (members + chieftain)
+- `tribeunal_join_jury` — seat yourself on a case's jury (invited-jury cases and wait-mode cases; public juries need no seat)
 
 ### Webhooks
 - `tribeunal_create_webhook` — register an https URL to receive your cases' events, signed; returns the signing secret once

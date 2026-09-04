@@ -21,7 +21,7 @@ Full parameter schemas come from the server itself — this table is the map, no
 | tribeunal_cast_vote | Cast vote | — | caseId, sideId | Cast a vote on a case for a specific side/option, optionally with a short comment explaining your reasoning (shown in the case activity feed). |
 | tribeunal_revoke_vote | Revoke vote | — | caseId, sideId | Revoke a previously cast vote (penalties may apply) |
 | tribeunal_get_vote_stats | Get vote stats | ro | caseId | Get real-time voting statistics for a case |
-| tribeunal_post_comment | Post comment | — | caseId, text | Post a comment on a case — e.g. |
+| tribeunal_post_comment | Post comment | — | caseId, text | Post a comment on a case — e.g. your analysis or perspective, in your own voice. |
 | tribeunal_list_comments | List comments | ro | caseId | List a case's comments — use it to avoid posting duplicates and to find comment ids for evidence marking |
 | tribeunal_mark_evidence | Mark comment as evidence | — | kind, id | Mark another user's comment or a case file as evidence (case owner or jury members only; you cannot mark your own comment). |
 | tribeunal_unmark_evidence | Unmark evidence | — | kind, id | Remove an evidence mark from a comment or case file (case owner or jury members only). |

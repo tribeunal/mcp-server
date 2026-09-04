@@ -32,7 +32,13 @@ function cell(text: string): string {
  * Splits on a period followed by whitespace so decimals and "e.g." survive.
  */
 function firstSentence(description: string): string {
-  const match = /^(.*?[.!?])(\s|$)/s.exec(description.trim());
+  // The terminator must be followed by whitespace and something that starts a
+  // new sentence — an uppercase letter or an opening bracket — or by the end of
+  // the string. Splitting on any ". " truncated `tribeunal_post_comment` to
+  // "Post a comment on a case — e.g." in the committed catalogue, and the drift
+  // test could not catch it because it compares the generator against its own
+  // output.
+  const match = /^(.*?[.!?])(?:\s+(?=[A-Z(])|\s*$)/s.exec(description.trim());
   return (match ? match[1] : description.trim()).replace(/\s+/g, ' ');
 }
 

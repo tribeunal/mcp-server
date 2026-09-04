@@ -52,6 +52,24 @@ export async function psql(sql: string): Promise<string> {
 
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 
+/**
+ * The eval identity's username, asked of the server rather than assumed.
+ *
+ * These fixtures UPDATE user rows directly. Hardcoding a username meant that
+ * pointing TRIBEUNAL_API_KEY at any other account would mutate a bystander's
+ * row while the gate it was setting up never fired — the silent-fixture failure
+ * this file exists to avoid.
+ */
+let evalUsername: string | undefined;
+async function evalIdentity(): Promise<string> {
+  if (evalUsername) return evalUsername;
+  const out = await callAs('eval', 'tribeunal_get_current_user', {});
+  const m = /"username"\s*:\s*"([^"]+)"/.exec(out);
+  if (!m) throw new Error(`could not resolve the eval identity's username from:\n${out.slice(0, 200)}`);
+  evalUsername = m[1];
+  return evalUsername;
+}
+
 /** First uuid in a tool's text output — the created resource. */
 function firstUuid(text: string): string {
   const m = text.match(UUID_RE);
@@ -82,9 +100,10 @@ export async function restoreFixtureState(): Promise<void> {
  * condition is the failure mode that has already cost this suite twice.
  */
 async function exhaustFreeVotes(): Promise<void> {
-  await psql(`UPDATE "user" SET free_votes_used=100000, free_votes_reset_date=CURRENT_DATE WHERE username='kuhn.kaylie'`);
+  const who = await evalIdentity();
+  await psql(`UPDATE "user" SET free_votes_used=100000, free_votes_reset_date=CURRENT_DATE WHERE username='${who}'`);
   pendingRestores.push(async () => {
-    await psql(`UPDATE "user" SET free_votes_used=0, free_votes_reset_date=NULL WHERE username='kuhn.kaylie'`);
+    await psql(`UPDATE "user" SET free_votes_used=0, free_votes_reset_date=NULL WHERE username='${who}'`);
   });
 }
 
@@ -198,7 +217,7 @@ export async function buildFixtures(skill: string, caseName: string): Promise<Re
         juryType: 'invited',
         jurorCount: 2,
       });
-      await callAs('admin', 'tribeunal_invite_jurors', { caseId: uuid, invitees: ['kuhn.kaylie'] });
+      await callAs('admin', 'tribeunal_invite_jurors', { caseId: uuid, invitees: [await evalIdentity()] });
       return { case: uuid };
     }
 
@@ -310,7 +329,7 @@ export async function buildFixtures(skill: string, caseName: string): Promise<Re
         jurorCount: 2,
         openImmediately: false,
       });
-      await callAs('admin', 'tribeunal_invite_jurors', { caseId: uuid, invitees: ['kuhn.kaylie'] });
+      await callAs('admin', 'tribeunal_invite_jurors', { caseId: uuid, invitees: [await evalIdentity()] });
       return { case: uuid };
     }
 
@@ -329,6 +348,11 @@ export async function buildFixtures(skill: string, caseName: string): Promise<Re
     // --- wiring-webhooks ---
     case 'wiring-webhooks/verify-signature': {
       // Deterministic HMAC material: the case is about arithmetic, not the API.
+      // Minted at build time, and the shipped verifier enforces a 300s replay
+      // window — so this case's timeout_seconds is deliberately below that. With
+      // --runs N the reps are sequential against one fixture, so a long run can
+      // still age the signature past the window; that is a limitation of the
+      // drill, not of the verifier.
       const { createHmac, randomBytes } = await import('node:crypto');
       const secret = randomBytes(32).toString('hex');
       const ts = String(Math.floor(Date.now() / 1000));
@@ -356,7 +380,7 @@ export async function buildFixtures(skill: string, caseName: string): Promise<Re
       // a failure and was not. Fixtures that accumulate change other cases.
       const existing = await psql(
         `SELECT t.uuid FROM tribe t JOIN "user" u ON u.id = t.owner_id`
-        + ` WHERE u.username = 'kuhn.kaylie' AND t.name LIKE '%SKILLS GATE%' ORDER BY t.id LIMIT 1`,
+        + ` WHERE u.username = '${await evalIdentity()}' AND t.name LIKE '%SKILLS GATE%' ORDER BY t.id LIMIT 1`,
       );
       if (existing) return { tribe: existing };
 
@@ -381,7 +405,7 @@ export async function buildFixtures(skill: string, caseName: string): Promise<Re
         isPublic: false,
       });
       const tribe = firstUuid(out);
-      await callAs('admin', 'tribeunal_invite_tribe_members', { tribeId: tribe, invitees: ['kuhn.kaylie'] });
+      await callAs('admin', 'tribeunal_invite_tribe_members', { tribeId: tribe, invitees: [await evalIdentity()] });
       await callAs('eval', 'tribeunal_join_tribe', { tribeId: tribe });
       return { tribe };
     }

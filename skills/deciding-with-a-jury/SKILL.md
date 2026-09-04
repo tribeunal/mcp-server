@@ -75,10 +75,13 @@ Opinion from people who have no accounts — a Discord, a mailing list.
 | Setting | Value |
 | --- | --- |
 | `visibility` | `private` |
+| `juryType` | `public` |
 | `allowsGuestVotes` | `true` |
 | `jurorCount` | leave room — this is reach, not a panel |
 
-Unlisted everywhere, votable by anyone holding the link.
+Unlisted everywhere, votable by anyone holding the link. `juryType` is stated because this is the one
+place the rest of this skill misleads you: private normally means an invited jury, and a link poll is
+the exception that requires a public one. Leaving it out works only because the server defaults it.
 
 ### A community case
 

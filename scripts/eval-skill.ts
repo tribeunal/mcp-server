@@ -68,7 +68,7 @@ function readFrontmatter(path: string): { front: Front; body: string } {
 
 // --- transcript model --------------------------------------------------------
 
-interface ToolCall { name: string; input: unknown; id?: string; result?: string; }
+interface ToolCall { name: string; input: unknown; id?: string; result?: string; failed?: boolean; }
 interface Transcript {
   toolCalls: ToolCall[];
   finalText: string;
@@ -124,8 +124,16 @@ function parseStreamJson(raw: string): Transcript {
         // needs is in the RESULT of post_comment, and asking it to grade
         // without that produced a verdict that flipped between runs.
         const call = toolCalls.find((c) => c.id === block.tool_use_id);
-        if (call) call.result = text;
-        if (sawCreateCase && !createdCaseUuid) {
+        if (call) {
+          call.result = text;
+          call.failed = block.is_error === true;
+        }
+        // Only a SUCCESSFUL create_case result yields the case uuid. Reading the
+        // first uuid from any later result once create_case had been attempted
+        // reported an unrelated case when the create failed and the agent
+        // searched instead.
+        const fromCreate = call !== undefined && toolAliases(call.name).includes('create_case');
+        if (sawCreateCase && !createdCaseUuid && fromCreate && block.is_error !== true) {
           const hit = UUID_RE.exec(text);
           if (hit) createdCaseUuid = hit[0];
         }
@@ -180,7 +188,10 @@ async function runGrader(
     }
     const min = front.min === undefined ? (front.max === undefined ? 1 : 0) : Number(front.min);
     const max = front.max === undefined ? Number.POSITIVE_INFINITY : Number(front.max);
-    const n = calls.length;
+    // A floor asks "did it do this", which a refused call did not; a ceiling
+    // asks "did it stop", which counts attempts. Filtering failures out of both
+    // would let an agent retry a refusal forever under a `max`.
+    const n = min > 0 ? calls.filter((c) => !c.failed).length : calls.length;
     return {
       name,
       passed: n >= min && n <= max,
@@ -262,15 +273,23 @@ async function judge(criteria: string, transcript: Transcript): Promise<{ pass: 
 
 // --- process helper ----------------------------------------------------------
 
-function run(cmd: string, args: string[], cwd: string, timeoutMs: number, env: NodeJS.ProcessEnv = process.env): Promise<{ code: number; stdout: string; stderr: string }> {
+function run(cmd: string, args: string[], cwd: string, timeoutMs: number, env: NodeJS.ProcessEnv = process.env): Promise<{ code: number; stdout: string; stderr: string; timedOut: boolean }> {
   return new Promise((res) => {
     const child = spawn(cmd, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
-    const timer = setTimeout(() => child.kill('SIGKILL'), timeoutMs);
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; child.kill('SIGKILL'); }, timeoutMs);
+    // Without this, a missing `claude` binary emits an unhandled 'error', the
+    // promise never settles, and the fixture restore in `finally` never runs —
+    // leaving the eval identity mutated for every later case.
+    child.on('error', (err) => {
+      clearTimeout(timer);
+      res({ code: -1, stdout, stderr: `${stderr}\nspawn failed: ${(err as Error).message}`, timedOut });
+    });
     child.stdout.on('data', (d) => { stdout += d; });
     child.stderr.on('data', (d) => { stderr += d; });
-    child.on('close', (code) => { clearTimeout(timer); res({ code: code ?? -1, stdout, stderr }); });
+    child.on('close', (code) => { clearTimeout(timer); res({ code: code ?? -1, stdout, stderr, timedOut }); });
   });
 }
 
@@ -375,7 +394,7 @@ async function runArm(
       '--setting-sources', 'project',
       '--allowedTools', 'mcp__tribeunal__*', 'Bash(node:*)', 'Read', 'Skill',
     ];
-    const { code, stdout, stderr } = await run('claude', args, dir, timeoutS * 1000);
+    const { code, stdout, stderr, timedOut } = await run('claude', args, dir, timeoutS * 1000);
     if (/unknown option/i.test(stderr)) {
       throw new Error(`claude rejected a flag — harness is out of date:\n${stderr.slice(0, 400)}`);
     }
@@ -385,6 +404,18 @@ async function runArm(
     // API once produced "Bash n=0" and "absence of evidence is a FAIL" for a
     // case that had simply been refused service. Only treat it as a transcript
     // when the agent actually did or said something.
+    // A killed run is a partial transcript: the agent may simply not have
+    // reached the tool the grader is watching for. Scoring it produces a
+    // "skill regression" that is really a budget problem — `acting-on-verdicts`
+    // can spend 170s in a single await call.
+    if (timedOut) {
+      const err = new Error(
+        `claude hit the ${timeoutS}s budget for ${skill}/${caseName} (${arm}) — partial transcript, not scored`,
+      );
+      (err as { transient?: boolean }).transient = true;
+      throw err;
+    }
+
     const refusedService = /\b(529|overloaded|rate.?limit|usage limit|session limit|api error)\b/i
       .test(transcript.finalText);
     if (transcript.toolCalls.length === 0 && (transcript.finalText.trim() === '' || refusedService)) {
@@ -478,6 +509,10 @@ async function main(): Promise<void> {
 
   const arm = String(opts.arm ?? 'both');
   const runs = Number(opts.runs ?? 1);
+  if (!Number.isInteger(runs) || runs < 1) {
+    console.error(`--runs must be a positive integer, got ${JSON.stringify(opts.runs)}`);
+    process.exit(2);
+  }
   const concurrency = Number(opts.concurrency ?? 3);
   const keepTemp = opts['keep-temp'] === 'true';
   const caseGlob = String(opts.case ?? '*');
@@ -528,14 +563,23 @@ async function main(): Promise<void> {
     return { name: caseName, arms: armResults, fixtures };
   });
 
-  let settled;
+  // `Promise.all` rejects on the FIRST failing job while its siblings keep
+  // running, so restoring in a plain `finally` used to hand rows back while
+  // another agent was still mid-arm — un-exhausting a budget the next case
+  // depended on. Settle every worker first, then restore, then rethrow.
+  const outcome = await pool(jobs, concurrency).then(
+    (value) => ({ value, error: undefined as unknown }),
+    (error) => ({ value: undefined as unknown, error }),
+  );
   try {
-    settled = await pool(jobs, concurrency);
-  } finally {
-    // Runs on the failure path too: a fixture that throws mid-build has often
-    // already mutated a row.
     await restoreFixtureState();
+  } catch (restoreError) {
+    // Never let a failed undo mask the real failure.
+    if (outcome.error === undefined) throw restoreError;
+    console.error('fixture restore also failed:', restoreError);
   }
+  if (outcome.error !== undefined) throw outcome.error;
+  const settled = outcome.value as Awaited<ReturnType<typeof pool>>;
   cases.push(...settled);
 
   // --- report ---
