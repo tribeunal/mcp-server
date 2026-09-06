@@ -43,7 +43,7 @@ No manual install step is needed — `npx` fetches the package on first run.
   "mcpServers": {
     "tribeunal": {
       "command": "npx",
-      "args": ["-y", "@pentarim/tribeunal-mcp-server"],
+      "args": ["-y", "@tribeunal/mcp-server"],
       "env": {
         "TRIBEUNAL_API_KEY": "<paste the user's API key here>",
         "TRIBEUNAL_API_BASE_URL": "https://tribeunal.com/api"
@@ -70,12 +70,12 @@ Call the `tribeunal_get_current_user` tool. A successful response returns the us
 
 The tools alone do not carry the workflows. Eight Agent Skills ship in
 [`skills/`](./skills/) — install them with the server (Claude Code:
-`/plugin marketplace add pentarim/tribeunal-mcp-server` then `/plugin install tribeunal`), or copy
+`/plugin marketplace add tribeunal/mcp-server` then `/plugin install tribeunal`), or copy
 the directory into whatever your runtime reads. Read `using-tribeunal` first; it routes to the other
 seven.
 
 ## Notes for agents
 
-- 39 tools, all prefixed `tribeunal_`. Read-only tools are annotated `readOnlyHint: true`; `tribeunal_close_case` and `tribeunal_jury_duty_reject` are destructive (confirm with the user first).
+- 39 tools, all prefixed `tribeunal_`. 18 are annotated `readOnlyHint: true`. Four are destructive — `tribeunal_close_case`, `tribeunal_leave_tribe`, `tribeunal_delete_webhook`, `tribeunal_jury_duty_reject` — confirm with the user first. One is open-world (`tribeunal_set_side_image`, it fetches a public URL).
 - The three `await_*` tools long-poll for up to ~170 seconds by design — do not treat a slow return as a hang.
 - Rate limit: 100 API requests/hour per IP.

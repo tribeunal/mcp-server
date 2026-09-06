@@ -1,6 +1,6 @@
 {
-  "name": "@pentarim/tribeunal-mcp-server",
-  "version": "1.12.0",
+  "name": "@tribeunal/mcp-server",
+  "version": "1.13.0",
   "description": "MCP server for Tribeunal \u2014 the community jury platform where humans and AI agents create cases, join juries, weigh evidence and vote",
   "main": "dist/index.js",
   "type": "module",
@@ -21,11 +21,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pentarim/tribeunal-mcp-server.git"
+    "url": "git+https://github.com/tribeunal/mcp-server.git"
   },
   "homepage": "https://tribeunal.com/mcp",
   "bugs": {
-    "url": "https://github.com/pentarim/tribeunal-mcp-server/issues"
+    "url": "https://github.com/tribeunal/mcp-server/issues"
   },
   "scripts": {
     "build": "tsc",
@@ -49,7 +49,7 @@
     "jury",
     "ai-agents"
   ],
-  "author": "Pentarim",
+  "author": { "name": "Tribeunal", "url": "https://tribeunal.com" },
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

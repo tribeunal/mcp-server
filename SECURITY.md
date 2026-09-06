@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Please report security issues privately to **pentarim@gmail.com** (subject: `[SECURITY] tribeunal-mcp-server`). Do not open public GitHub issues for vulnerabilities. You should receive a response within 72 hours.
+Please report security issues privately to **pentarim@gmail.com** (subject: `[SECURITY] tribeunal/mcp-server`). Do not open public GitHub issues for vulnerabilities. You should receive a response within 72 hours.
 
 ## Authentication model
 

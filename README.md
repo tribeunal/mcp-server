@@ -50,7 +50,7 @@ For stdio-only clients or offline development. Uses an API key instead of OAuth 
   "mcpServers": {
     "tribeunal": {
       "command": "npx",
-      "args": ["-y", "@pentarim/tribeunal-mcp-server"],
+      "args": ["-y", "@tribeunal/mcp-server"],
       "env": {
         "TRIBEUNAL_API_KEY": "YOUR_API_KEY",
         "TRIBEUNAL_API_BASE_URL": "https://tribeunal.com/api"
@@ -72,11 +72,11 @@ actually reaches a verdict. Each was written against a recorded failure that it 
 In Claude Code, the server and the skills install together:
 
 ```
-/plugin marketplace add pentarim/tribeunal-mcp-server
+/plugin marketplace add tribeunal/mcp-server
 /plugin install tribeunal
 ```
 
-Any other agent runtime: `npx skills add pentarim/tribeunal-mcp-server`, or copy
+Any other agent runtime: `npx skills add tribeunal/mcp-server`, or copy
 [`skills/`](./skills/).
 
 | Skill | Reach for it when |
@@ -92,7 +92,7 @@ Any other agent runtime: `npx skills add pentarim/tribeunal-mcp-server`, or copy
 
 ## Available tools
 
-All tools carry MCP annotations (`title`, `readOnlyHint`/`destructiveHint`) so clients can gate confirmations appropriately.
+All tools carry MCP annotations (`title`, `readOnlyHint`/`destructiveHint`) so clients can gate confirmations appropriately. 18 of the 39 are read-only; four are destructive (`close_case`, `leave_tribe`, `delete_webhook`, `jury_duty_reject`) and one is open-world (`set_side_image`).
 
 ### Cases
 - `tribeunal_create_case` — create a case (case = jury decides, advice = creator decides, poll = opinion), public or private, with 2-10 sides. Cases open for voting immediately by default — invited jurors are still invited and can view, join and vote while it is open. Pass `openImmediately: false` to hold the case in jury selection until `jurorCount` (2-100, default 12) jurors have joined, and only then open it. Each side in `sides[]` accepts an optional `image` https URL, fetched and re-encoded server-side and shown on its vote card
@@ -131,7 +131,7 @@ MCP has no server→model push that reaches a running turn, so the await tools *
 ### Webhooks
 - `tribeunal_create_webhook` — register an https URL to receive your cases' events, signed; returns the signing secret once
 - `tribeunal_list_webhooks` — your endpoints with delivery health (last status, failure count); never returns secrets
-- `tribeunal_delete_webhook` — remove an endpoint; stops deliveries and destroys its secret
+- `tribeunal_delete_webhook` — remove an endpoint; stops deliveries and destroys its secret *(destructive)*
 
 ## Example flows
 
@@ -155,7 +155,7 @@ AI: tribeunal_get_case to review sides and comments, tribeunal_post_comment with
 Two transports share one transport-agnostic core (`src/core/tools.ts`, `src/client/api-client.ts`), so the 39 tools are byte-identical everywhere:
 
 - **`worker/`** — the remote server on Cloudflare Workers: Auth0 OAuth 2.1 (PKCE + dynamic client registration) via `@cloudflare/workers-oauth-provider`, one Durable Object per session, every call authenticated as the signed-in user. Deploy/setup: [`worker/README.md`](./worker/README.md).
-- **`src/index.ts`** — the stdio server published to npm as [`@pentarim/tribeunal-mcp-server`](https://www.npmjs.com/package/@pentarim/tribeunal-mcp-server), authenticating with a personal API key.
+- **`src/index.ts`** — the stdio server published to npm as [`@tribeunal/mcp-server`](https://www.npmjs.com/package/@tribeunal/mcp-server), authenticating with a personal API key.
 
 ## Development
 
@@ -193,4 +193,4 @@ MIT — see [LICENSE](LICENSE).
 ## Support
 
 - Install guide & FAQ: [tribeunal.com/mcp](https://tribeunal.com/mcp)
-- Issues: [github.com/pentarim/tribeunal-mcp-server/issues](https://github.com/pentarim/tribeunal-mcp-server/issues)
+- Issues: [github.com/tribeunal/mcp-server/issues](https://github.com/tribeunal/mcp-server/issues)
