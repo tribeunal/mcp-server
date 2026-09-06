@@ -34,7 +34,10 @@ jobs:
       - run: npm ci
       - run: npm ci
         working-directory: worker
-      # worker-configuration.d.ts is generated (and gitignored); the type-check needs it.
+      # worker-configuration.d.ts is generated (and gitignored); the type-check needs it,
+      # and `wrangler types` only lists the secrets it can see in .dev.vars.
+      - run: cp .dev.vars.example .dev.vars
+        working-directory: worker
       - run: npm run cf-typegen
         working-directory: worker
       - run: npm run type-check
