@@ -70,7 +70,7 @@ Call the `tribeunal_get_current_user` tool. A successful response returns the us
 
 The tools alone do not carry the workflows. Eight Agent Skills ship in
 [`skills/`](./skills/) — install them with the server (Claude Code:
-`/plugin marketplace add pentarim/tribeunal-mcp-server` then `/plugin install tribeunal`), or copy
+`/plugin marketplace add tribeunal/mcp-server` then `/plugin install tribeunal`), or copy
 the directory into whatever your runtime reads. Read `using-tribeunal` first; it routes to the other
 seven.
 

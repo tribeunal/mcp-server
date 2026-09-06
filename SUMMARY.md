@@ -187,8 +187,8 @@ TRIBEUNAL_CLIENT_SECRET=your_client_secret # Optional OAuth
 
 ```bash
 # Clone and install
-git clone https://github.com/pentarim/tribeunal-mcp-server.git
-cd tribeunal-mcp-server
+git clone https://github.com/tribeunal/mcp-server.git
+cd mcp-server
 npm install
 
 # Configure environment

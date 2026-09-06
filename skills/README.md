@@ -11,14 +11,14 @@ use them — Claude Code, Cursor, Codex, or a clone of this directory.
 Claude Code (the server and all eight skills in one step):
 
 ```
-/plugin marketplace add pentarim/tribeunal-mcp-server
+/plugin marketplace add tribeunal/mcp-server
 /plugin install tribeunal
 ```
 
 Any other agent runtime:
 
 ```
-npx skills add pentarim/tribeunal-mcp-server
+npx skills add tribeunal/mcp-server
 ```
 
 claude.ai connector users already have the tools; download the skills from

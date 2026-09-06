@@ -6,7 +6,7 @@
   "version": "1.12.0",
   "websiteUrl": "https://tribeunal.com/mcp",
   "repository": {
-    "url": "https://github.com/pentarim/tribeunal-mcp-server",
+    "url": "https://github.com/tribeunal/mcp-server",
     "source": "github"
   },
   "remotes": [

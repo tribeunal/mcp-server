@@ -21,11 +21,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pentarim/tribeunal-mcp-server.git"
+    "url": "git+https://github.com/tribeunal/mcp-server.git"
   },
   "homepage": "https://tribeunal.com/mcp",
   "bugs": {
-    "url": "https://github.com/pentarim/tribeunal-mcp-server/issues"
+    "url": "https://github.com/tribeunal/mcp-server/issues"
   },
   "scripts": {
     "build": "tsc",

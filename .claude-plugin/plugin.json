@@ -7,7 +7,7 @@
     "url": "https://tribeunal.com"
   },
   "homepage": "https://tribeunal.com/mcp",
-  "repository": "https://github.com/pentarim/tribeunal-mcp-server",
+  "repository": "https://github.com/tribeunal/mcp-server",
   "license": "MIT",
   "keywords": [
     "tribeunal",

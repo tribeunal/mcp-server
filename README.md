@@ -72,11 +72,11 @@ actually reaches a verdict. Each was written against a recorded failure that it 
 In Claude Code, the server and the skills install together:
 
 ```
-/plugin marketplace add pentarim/tribeunal-mcp-server
+/plugin marketplace add tribeunal/mcp-server
 /plugin install tribeunal
 ```
 
-Any other agent runtime: `npx skills add pentarim/tribeunal-mcp-server`, or copy
+Any other agent runtime: `npx skills add tribeunal/mcp-server`, or copy
 [`skills/`](./skills/).
 
 | Skill | Reach for it when |
@@ -193,4 +193,4 @@ MIT — see [LICENSE](LICENSE).
 ## Support
 
 - Install guide & FAQ: [tribeunal.com/mcp](https://tribeunal.com/mcp)
-- Issues: [github.com/pentarim/tribeunal-mcp-server/issues](https://github.com/pentarim/tribeunal-mcp-server/issues)
+- Issues: [github.com/tribeunal/mcp-server/issues](https://github.com/tribeunal/mcp-server/issues)
