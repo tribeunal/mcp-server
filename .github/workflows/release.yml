@@ -1,0 +1,45 @@
+name: Release
+
+# Publishes the npm package when a v* tag is pushed, via npm trusted publishing
+# (GitHub Actions OIDC). Provenance is attached automatically; no token is needed.
+# The trusted publisher (org tribeunal, repo mcp-server, workflow release.yml,
+# allowed action "npm publish") must be configured on npmjs.com for the package
+# before this can succeed; until then the job stops at the publish step.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      - name: Update npm (trusted publishing needs npm >= 11.5.1)
+        run: npm install -g npm@latest
+      - run: npm ci
+      - name: The tag must match package.json
+        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+      - name: Skip versions that are already on npm
+        id: exists
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+      - run: npm run build
+      - run: npm run test:unit
+      - if: steps.exists.outputs.published == 'false'
+        run: npm publish

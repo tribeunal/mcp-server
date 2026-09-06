@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # `npm run test:unit` relies on Node >= 21 expanding the tests/**/*.test.ts glob itself.
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:unit
+      - run: npm pack --dry-run
+
+  worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            worker/package-lock.json
+      - run: npm ci
+      - run: npm ci
+        working-directory: worker
+      - run: npm run type-check
+        working-directory: worker
+      - run: npx wrangler deploy --dry-run --outdir /tmp/wkr
+        working-directory: worker
