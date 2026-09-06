@@ -92,7 +92,7 @@ Any other agent runtime: `npx skills add tribeunal/mcp-server`, or copy
 
 ## Available tools
 
-All tools carry MCP annotations (`title`, `readOnlyHint`/`destructiveHint`) so clients can gate confirmations appropriately.
+All tools carry MCP annotations (`title`, `readOnlyHint`/`destructiveHint`) so clients can gate confirmations appropriately. 18 of the 39 are read-only; four are destructive (`close_case`, `leave_tribe`, `delete_webhook`, `jury_duty_reject`) and one is open-world (`set_side_image`).
 
 ### Cases
 - `tribeunal_create_case` — create a case (case = jury decides, advice = creator decides, poll = opinion), public or private, with 2-10 sides. Cases open for voting immediately by default — invited jurors are still invited and can view, join and vote while it is open. Pass `openImmediately: false` to hold the case in jury selection until `jurorCount` (2-100, default 12) jurors have joined, and only then open it. Each side in `sides[]` accepts an optional `image` https URL, fetched and re-encoded server-side and shown on its vote card
@@ -131,7 +131,7 @@ MCP has no server→model push that reaches a running turn, so the await tools *
 ### Webhooks
 - `tribeunal_create_webhook` — register an https URL to receive your cases' events, signed; returns the signing secret once
 - `tribeunal_list_webhooks` — your endpoints with delivery health (last status, failure count); never returns secrets
-- `tribeunal_delete_webhook` — remove an endpoint; stops deliveries and destroys its secret
+- `tribeunal_delete_webhook` — remove an endpoint; stops deliveries and destroys its secret *(destructive)*
 
 ## Example flows
 
