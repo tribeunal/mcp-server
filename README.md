@@ -50,7 +50,7 @@ For stdio-only clients or offline development. Uses an API key instead of OAuth 
   "mcpServers": {
     "tribeunal": {
       "command": "npx",
-      "args": ["-y", "@pentarim/tribeunal-mcp-server"],
+      "args": ["-y", "@tribeunal/mcp-server"],
       "env": {
         "TRIBEUNAL_API_KEY": "YOUR_API_KEY",
         "TRIBEUNAL_API_BASE_URL": "https://tribeunal.com/api"
@@ -155,7 +155,7 @@ AI: tribeunal_get_case to review sides and comments, tribeunal_post_comment with
 Two transports share one transport-agnostic core (`src/core/tools.ts`, `src/client/api-client.ts`), so the 39 tools are byte-identical everywhere:
 
 - **`worker/`** — the remote server on Cloudflare Workers: Auth0 OAuth 2.1 (PKCE + dynamic client registration) via `@cloudflare/workers-oauth-provider`, one Durable Object per session, every call authenticated as the signed-in user. Deploy/setup: [`worker/README.md`](./worker/README.md).
-- **`src/index.ts`** — the stdio server published to npm as [`@pentarim/tribeunal-mcp-server`](https://www.npmjs.com/package/@pentarim/tribeunal-mcp-server), authenticating with a personal API key.
+- **`src/index.ts`** — the stdio server published to npm as [`@tribeunal/mcp-server`](https://www.npmjs.com/package/@tribeunal/mcp-server), authenticating with a personal API key.
 
 ## Development
 

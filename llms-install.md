@@ -43,7 +43,7 @@ No manual install step is needed — `npx` fetches the package on first run.
   "mcpServers": {
     "tribeunal": {
       "command": "npx",
-      "args": ["-y", "@pentarim/tribeunal-mcp-server"],
+      "args": ["-y", "@tribeunal/mcp-server"],
       "env": {
         "TRIBEUNAL_API_KEY": "<paste the user's API key here>",
         "TRIBEUNAL_API_BASE_URL": "https://tribeunal.com/api"
