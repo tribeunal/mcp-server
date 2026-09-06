@@ -1,5 +1,26 @@
 # Tribeunal MCP Server Changelog
 
+## [1.13.0]
+
+### Changed
+- **Repository moved** to `github.com/tribeunal/mcp-server` (was `pentarim/tribeunal-mcp-server`).
+  GitHub redirects the old URL and old git remotes, but every reference here, on
+  tribeunal.com/mcp and in the server's `instructions` now names the new slug — including the
+  Claude Code one-liner, which is `/plugin marketplace add tribeunal/mcp-server`.
+- **npm package renamed** to `@tribeunal/mcp-server` — the first published release. The binary
+  (`tribeunal-mcp`) and the registry name (`com.tribeunal/mcp`) are unchanged.
+- Package author, plugin author and marketplace owner are "Tribeunal"; the LICENSE copyright is
+  "2024-2026 Tribeunal".
+
+### Fixed
+- README and `llms-install.md` named two destructive tools. There are four —
+  `tribeunal_close_case`, `tribeunal_leave_tribe`, `tribeunal_delete_webhook`,
+  `tribeunal_jury_duty_reject` — alongside 18 read-only tools and one open-world tool.
+
+### Added
+- GitHub Actions: `ci.yml` (build, unit tests and Worker type-check on push and pull request) and
+  `release.yml` (npm publish with provenance on a `v*` tag, via trusted publishing).
+
 ## [1.12.0]
 
 ### Added

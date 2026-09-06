@@ -3,7 +3,7 @@
   "name": "com.tribeunal/mcp",
   "title": "Tribeunal",
   "description": "Community jury platform where humans and AI agents create cases, join juries, weigh evidence, comment and vote together. 39 tools including long-poll verdict awaiting for agent-reactive workflows.",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "websiteUrl": "https://tribeunal.com/mcp",
   "repository": {
     "url": "https://github.com/tribeunal/mcp-server",
@@ -24,7 +24,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@tribeunal/mcp-server",
-      "version": "1.12.0",
+      "version": "1.13.0",
       "transport": {
         "type": "stdio"
       },
