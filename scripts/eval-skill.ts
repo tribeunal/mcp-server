@@ -22,7 +22,7 @@
  *   npx tsx scripts/eval-skill.ts --skill using-tribeunal --arm both --json out.json
  */
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -308,9 +308,38 @@ function run(cmd: string, args: string[], cwd: string, timeoutMs: number, env: N
 
 // --- arm execution -----------------------------------------------------------
 
+/**
+ * The entry skill lives at the repo ROOT, the eight workflow skills under
+ * `skills/<name>/`. `npx skills add tribeunal/mcp-server` installs only the
+ * root file, so the root's eval cases must run against exactly that one file.
+ */
+const ROOT_SKILL = 'tribeunal';
+
+function skillSourceFile(skill: string): string {
+  return skill === ROOT_SKILL ? join(REPO, 'SKILL.md') : join(REPO, 'skills', skill, 'SKILL.md');
+}
+
+/** Per-case knobs read from the prompt's frontmatter. */
+interface CaseOptions {
+  /**
+   * `none` gives the run an EMPTY MCP server map. The root skill has to work
+   * for a reader who has installed the file and connected nothing yet, and a
+   * `none` run must not be able to reach a real server: it gets no
+   * `mcp__tribeunal__*` and no `Bash`, and `--strict-mcp-config` over an empty
+   * config keeps any user-level server (the production connector included)
+   * out of scope.
+   */
+  mcp: 'dev' | 'none';
+  /** Extra tools a case needs, e.g. `WebFetch` for the raw-URL fallback. */
+  allowedTools: string[];
+}
+
 /** Skills the skill under test points at, so a cross-reference can be followed. */
 function crossReferenced(skill: string): string[] {
-  const skillFile = join(REPO, 'skills', skill, 'SKILL.md');
+  // Root mode is a root-ONLY install by definition: the workflow skills are
+  // not on disk for that reader, they are fetched from the raw URL.
+  if (skill === ROOT_SKILL) return [];
+  const skillFile = skillSourceFile(skill);
   if (!existsSync(skillFile)) return [];
   const body = readFileSync(skillFile, 'utf8');
   return readdirSync(join(REPO, 'skills'), { withFileTypes: true })
@@ -319,14 +348,23 @@ function crossReferenced(skill: string): string[] {
     .filter((other) => body.includes(other));
 }
 
-function scaffold(skill: string, arm: 'with' | 'without'): string {
+function scaffold(skill: string, arm: 'with' | 'without', opts: CaseOptions): string {
   const dir = mkdtempSync(join(tmpdir(), `skilleval-${skill}-${arm}-`));
   if (arm === 'with') {
     const skillsDir = join(dir, '.claude', 'skills');
     mkdirSync(skillsDir, { recursive: true });
-    for (const name of [skill, ...crossReferenced(skill)]) {
-      const src = join(REPO, 'skills', name);
-      if (existsSync(src)) symlinkSync(src, join(skillsDir, name));
+    if (skill === ROOT_SKILL) {
+      // COPY the single file. Symlinking the repo root would drag `skills/`
+      // and `evals/` into the agent's scope and quietly turn a root-only
+      // install into a full one — the opposite of what these cases test.
+      const rootDir = join(skillsDir, ROOT_SKILL);
+      mkdirSync(rootDir, { recursive: true });
+      copyFileSync(skillSourceFile(skill), join(rootDir, 'SKILL.md'));
+    } else {
+      for (const name of [skill, ...crossReferenced(skill)]) {
+        const src = join(REPO, 'skills', name);
+        if (existsSync(src)) symlinkSync(src, join(skillsDir, name));
+      }
     }
   }
   // `--setting-sources project` reads this and nothing user-level.
@@ -334,7 +372,7 @@ function scaffold(skill: string, arm: 'with' | 'without'): string {
   writeFileSync(join(dir, '.claude', 'settings.json'), JSON.stringify({}, null, 2));
   writeFileSync(
     join(dir, 'tribeunal-dev.json'),
-    JSON.stringify({
+    JSON.stringify(opts.mcp === 'none' ? { mcpServers: {} } : {
       mcpServers: {
         tribeunal: {
           command: 'npx',
@@ -371,6 +409,7 @@ async function runArmWithRetries(
   timeoutS: number,
   arm: 'with' | 'without',
   keepTemp: boolean,
+  opts: CaseOptions,
   attempts = 3,
 ): Promise<ArmResult> {
   // Bounded by wall clock, not just attempt count. A case with a 480s budget
@@ -381,7 +420,7 @@ async function runArmWithRetries(
   const deadline = Date.now() + 2 * timeoutS * 1000;
   for (let attempt = 1; ; attempt++) {
     try {
-      return await runArm(skill, caseName, prompt, maxTurns, timeoutS, arm, keepTemp);
+      return await runArm(skill, caseName, prompt, maxTurns, timeoutS, arm, keepTemp, opts);
     } catch (e) {
       const transient = (e as { transient?: boolean }).transient === true;
       const backoffMs = 15_000 * attempt;
@@ -409,9 +448,16 @@ async function runArm(
   timeoutS: number,
   arm: 'with' | 'without',
   keepTemp: boolean,
+  opts: CaseOptions,
 ): Promise<ArmResult> {
-  const dir = scaffold(skill, arm);
+  const dir = scaffold(skill, arm, opts);
   try {
+    // A `mcp: none` case is the cold-start scenario: no server, and no way to
+    // improvise one. Dropping `Bash` with it is what stops a skill-less agent
+    // reaching a live REST API by hand.
+    const allowed = opts.mcp === 'none'
+      ? ['Read', 'Skill', ...opts.allowedTools]
+      : ['mcp__tribeunal__*', 'Bash(node:*)', 'Read', 'Skill', ...opts.allowedTools];
     const args = [
       '-p', prompt,
       '--output-format', 'stream-json',
@@ -420,7 +466,7 @@ async function runArm(
       '--mcp-config', join(dir, 'tribeunal-dev.json'),
       '--strict-mcp-config',
       '--setting-sources', 'project',
-      '--allowedTools', 'mcp__tribeunal__*', 'Bash(node:*)', 'Read', 'Skill',
+      '--allowedTools', ...allowed,
     ];
     const { code, stdout, stderr, timedOut } = await run('claude', args, dir, timeoutS * 1000);
     if (/unknown option/i.test(stderr)) {
@@ -560,6 +606,10 @@ async function main(): Promise<void> {
     const { front, body } = readFrontmatter(join(skillDir, caseName, 'prompt.md'));
     const maxTurns = Number(front.max_turns ?? 12);
     const timeoutS = Number(front.timeout_seconds ?? 420);
+    const caseOpts: CaseOptions = {
+      mcp: String(front.mcp ?? 'dev') === 'none' ? 'none' : 'dev',
+      allowedTools: Array.isArray(front.allowed_tools) ? front.allowed_tools.map(String) : [],
+    };
 
     const fixtures = { ...(await buildFixtures(skill, caseName)), ...fixtureOverrides };
     const prompt = body.replace(/\{\{fixture\.([a-zA-Z0-9_]+)\}\}/g, (_m, k) => {
@@ -580,7 +630,7 @@ async function main(): Promise<void> {
         // answer worth reporting.
         const reps: ArmResult[] = [];
         for (let r = 0; r < runs; r++) {
-          reps.push(await runArmWithRetries(skill, caseName, prompt, maxTurns, timeoutS, a, keepTemp));
+          reps.push(await runArmWithRetries(skill, caseName, prompt, maxTurns, timeoutS, a, keepTemp, caseOpts));
         }
         const worst = reps.find((rep) => rep.graders.some((g) => !g.passed)) ?? reps[reps.length - 1];
         const failedReps = reps.filter((rep) => rep.graders.some((g) => !g.passed)).length;
