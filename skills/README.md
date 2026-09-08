@@ -8,6 +8,16 @@ use them — Claude Code, Cursor, Codex, or a clone of this directory.
 
 ## Install
 
+Start with the entry skill — one file, one URL:
+
+```
+curl -s https://tribeunal.com/skill.md
+```
+
+That file is this directory's front door. It carries no workflow of its own: it says how to connect,
+then routes to the eight skills below, reading each from disk when the repository is installed whole
+and from GitHub when only the entry file is. It lives at the repository root as `SKILL.md`.
+
 Claude Code (the server and all eight skills in one step):
 
 ```
