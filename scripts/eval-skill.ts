@@ -319,6 +319,20 @@ function skillSourceFile(skill: string): string {
   return skill === ROOT_SKILL ? join(REPO, 'SKILL.md') : join(REPO, 'skills', skill, 'SKILL.md');
 }
 
+/**
+ * Tools a root-mode case must not reach for. `Read` and `Skill` stay: the skill
+ * has to be loadable, and a companion file has to be readable when it is on
+ * disk. Anything a case explicitly asks for is kept.
+ */
+const ROOT_DENY = [
+  'Bash', 'Glob', 'Grep', 'Edit', 'Write', 'NotebookEdit',
+  'Task', 'ToolSearch', 'WebSearch', 'WebFetch',
+];
+
+function deniedTools(opts: CaseOptions): string[] {
+  return ROOT_DENY.filter((t) => !opts.allowedTools.includes(t));
+}
+
 /** Per-case knobs read from the prompt's frontmatter. */
 interface CaseOptions {
   /**
@@ -369,7 +383,17 @@ function scaffold(skill: string, arm: 'with' | 'without', opts: CaseOptions): st
   }
   // `--setting-sources project` reads this and nothing user-level.
   mkdirSync(join(dir, '.claude'), { recursive: true });
-  writeFileSync(join(dir, '.claude', 'settings.json'), JSON.stringify({}, null, 2));
+  // `--allowedTools` only PRE-APPROVES; it does not deny. A root-mode run that
+  // was meant to have no tools was observed shelling out to `claude mcp list`
+  // and grepping ~/.claude.json — reading the operator's real MCP config,
+  // production entries included — and burning its whole turn budget on the
+  // investigation instead of answering from the skill. Only a deny list
+  // actually removes a tool, so root-mode cases get one; the eight workflow
+  // skills keep the allow-list-only behaviour their cases were written under.
+  writeFileSync(
+    join(dir, '.claude', 'settings.json'),
+    JSON.stringify(skill === ROOT_SKILL ? { permissions: { deny: deniedTools(opts) } } : {}, null, 2),
+  );
   writeFileSync(
     join(dir, 'tribeunal-dev.json'),
     JSON.stringify(opts.mcp === 'none' ? { mcpServers: {} } : {

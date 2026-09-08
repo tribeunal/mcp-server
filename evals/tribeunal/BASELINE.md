@@ -1,38 +1,39 @@
 # Root skill (`tribeunal`) — RED baseline
 
-Recorded 2026-09-08, before a single line of the root `SKILL.md` was written, against
-`main` @ `7f1c5f0`. Runner: `npx tsx scripts/eval-skill.ts --skill tribeunal --arm without --runs 1`.
+Recorded 2026-09-08 against `main` @ `7f1c5f0`, before the root `SKILL.md` was written.
+Runner: `npx tsx scripts/eval-skill.ts --skill tribeunal --arm without --runs 1`.
 
-**Three cases, three control failures.** Every case earns its guidance; nothing here is decoration.
+**Three cases, three failing controls.** Every case earns its guidance; nothing here is decoration.
 
-## `cold-start` — 3 of 3 graders fail
+> **Harness correction, same day.** The first baseline was taken while root-mode runs still had
+> `Bash`. `--allowedTools` only pre-approves — it does not deny — so a control that was supposed to
+> have no tools shelled out to `claude mcp list` and grepped `~/.claude.json`, reading the operator's
+> real MCP config, and spent its whole turn budget investigating instead of answering. Root-mode
+> cases now carry a `permissions.deny` list, and **both arms below were re-run under it**. The
+> conclusions did not change; one grader moved to *Baseline passes*.
 
-`mcp: none`, so the agent has no Tribeunal tools and no `Bash`. Prompt: *"I want a jury to rule on
-whether we rewrite or refactor our billing service. Use Tribeunal for it."*
+## `cold-start` — 2 of 3 graders fail
+
+`mcp: none`. Prompt: *"I want a jury to rule on whether we rewrite or refactor our billing service.
+Use Tribeunal for it."*
 
 | Grader | Control |
 | --- | --- |
 | `names-the-endpoint` | FAIL — `/mcp\.tribeunal\.com/mcp/` hits=0 |
 | `gives-an-install-route` | FAIL — plugin / `claude mcp add` / `skill.md` alternation hits=0 |
-| `does-not-fake-a-case` | FAIL — judge: "did not explicitly tell the user what to connect before a case can be filed" |
+| `does-not-fake-a-case` | passes — see *Baseline passes* |
 
 Verbatim (control, no tool calls):
 
-> I don't have a Tribeunal skill available in this session. The skills I can invoke are: dataviz,
-> update-config, … — nothing named Tribeunal or anything jury/deliberation-shaped.
-> […]
-> In the meantime, I can do the underlying task directly: stage a structured multi-perspective
-> deliberation on rewrite vs. refactor for your billing service — e.g. independent advocates for each
-> position plus a synthesis, grounded in the actual code.
+> I don't have a Tribeunal skill available in this session […] **If Tribeunal is a skill you have
+> somewhere**, it needs to be installed where this session can see it — typically as a plugin, or as
+> a `SKILL.md` under `.claude/skills/tribeunal/` […] **If you want the ruling now**, I can run the
+> jury myself —
 
-The failure has a shape worth naming: unaided, the model does not say *how to connect* — it offers to
-**simulate the product instead**. The endpoint and the install routes are facts about this server that
-no amount of reasoning supplies. That is precisely the "Getting connected" section's job.
-
-*(First run used `max_turns: 4`; the agent spent every turn on `Bash` calls the allow list denied and
-never produced an answer, so the judge had no text to read. Budget raised to 8 and the case re-run —
-the control then answered in full and still failed all three graders. A turn-starved transcript is a
-harness artefact, not a RED.)*
+Two failures with one shape. Unaided the model reasons about *Claude Code's* skill-loading mechanics —
+it has no idea Tribeunal is a hosted server with an endpoint — and then offers to **simulate the
+product**. The endpoint and the install routes are facts about this server that no reasoning supplies.
+That is the "Getting connected" section's entire job.
 
 ## `first-response` — 2 of 3 graders fail
 
@@ -41,17 +42,17 @@ harness artefact, not a RED.)*
 | Grader | Control |
 | --- | --- |
 | `uses-the-opening-line` | FAIL — `/Tribeunal is installed\./` hits=0 |
-| `stays-an-introduction` | FAIL — judge: "a troubleshooting guide about skill installation, not a first introduction … walks the user through configuration steps and file paths, exceeds the word limit" |
-| `names-no-tools` | **passes in the control** (`/tribeunal_/` hits=0) — see *Baseline passes* |
+| `stays-an-introduction` | FAIL — judge: "declines to provide an introduction rather than introducing the product"; a later rep ran to "~190 words with the diagnostic explanation" |
+| `names-no-tools` | passes — see *Baseline passes* |
 
 Verbatim:
 
-> I don't have a Tribeunal skill available, so I can't introduce it — anything I said about what it
-> does would be invented. […] I tried to search the filesystem for it directly, but both commands were
-> declined by the permission layer.
+> I don't have a Tribeunal skill available — it isn't in the list of skills loaded in this session […]
+> - **Installed but not picked up yet** — skills are read at session start.
+> - **Wrong location** — project skills go in `.claude/skills/<name>/SKILL.md` …
 
-Unaided the model turns an introduction into an install-debugging session. The fixed opening line and
-the ≤80-word block are what make every harness introduce the product the same way.
+Asked to introduce a product, the control writes an install-debugging checklist. The fixed opening
+line and the ≤80-word block are what make every harness introduce Tribeunal the same way.
 
 ## `root-only-fallback` — 2 of 2 graders fail
 
@@ -61,26 +62,41 @@ refused my vote with `tag_access_required`. What does that mean and should I ret
 | Grader | Control |
 | --- | --- |
 | `fetches-the-error-catalogue` | FAIL — `WebFetch` n=0, want ≥1 |
-| `reads-the-refusal-correctly` | FAIL — judge: "guessed the error means a tag-membership/credential access problem …, not an exhausted daily allowance" |
+| `reads-the-refusal-correctly` | FAIL — judge: "guesses at tag-membership, jury-seating, and arbitration barriers as the 'plausible readings'" |
 
 Verbatim:
 
-> I checked: the `using-tribeunal` skill isn't installed in this session, so I can't give you
-> Tribeunal's official definition of that error code — and I'd rather not invent one for a permissions
-> error.
-> […] **What it most likely means** (inference from the name…)
+> I also can't tell you authoritatively what that tag means, because `tag_access_required` isn't
+> documented in any of the Tribeunal tool descriptions I have loaded in this session.
+> […] **The name points at eligibility, not at your** …
 
-The control correctly refuses to invent — and then infers anyway, landing on the wrong half of the
-answer. The truth is compound: the case is tag-gated **and** the identity's daily free votes are spent,
-so the retry answer is *never today* (`skills/using-tribeunal/references/errors.md:19`). It also
-called `tribeunal_jury_duty_dashboard`, saw budget remaining, and was pushed further from the answer.
-Knowing the file exists at a fetchable URL — and that guessing is not allowed — is the whole lesson.
+The control correctly refuses to invent — and then infers anyway, landing on the wrong half. The
+truth is compound: the case is tag-gated **and** the identity's daily free votes are spent, so the
+retry answer is *never today* (`skills/using-tribeunal/references/errors.md:19`). Knowing the
+catalogue exists at a fetchable URL, and that guessing is not allowed, is the whole lesson.
 
 ### Baseline passes
 
-- `first-response` / `names-no-tools` — the control never emitted a `tribeunal_` tool name, because it
-  had no tools to name. Kept as a **regression guard only** (the `with` arm must not start naming
-  tools once the routing table is in scope); it earns no guidance of its own, per
-  `superpowers:writing-skills`.
+Kept as regression guards only. Neither earns guidance of its own, per `superpowers:writing-skills`.
 
-No case was dropped: every case has at least one grader that the control genuinely fails.
+- `cold-start` / `does-not-fake-a-case` — with no tools, the control had nothing to fake a case
+  *with*, so it never claimed one. The guard matters in the `with` arm, where the skill describes a
+  product the agent still cannot reach.
+- `first-response` / `names-no-tools` — likewise: no tools loaded, so no `tribeunal_` name to emit.
+  The guard matters once the routing table is in scope.
+
+Every case retains at least one grader the control genuinely fails.
+
+## What the GREEN arm needed
+
+Two rounds, both recorded because each was a real defect rather than a wording preference:
+
+1. **A contradiction in the skill.** The first draft of *First response* told the agent to "say what
+   to connect" if nothing was connected — directly against the same section's ≤80-word,
+   no-endpoints contract. The agent obeyed the wrong half and appended a `claude mcp add` line.
+2. **A prohibition that got negotiated.** Rewriting it as "nothing else belongs in that reply" still
+   lost: the agent noticed the server was unreachable and appended the command anyway, prefaced with
+   "One thing to do first". It passed one rep and failed the next — variance, which
+   `superpowers:writing-skills` reads as wording that is not binding. Closing the loophole by name
+   ("not a remark that nothing is connected yet … noticing that the server is unreachable is not a
+   reason to append it") converged it: **3 of 3 reps pass**.

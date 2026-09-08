@@ -14,7 +14,9 @@
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
-    "llms-install.md"
+    "llms-install.md",
+    "SKILL.md",
+    "llms.txt"
   ],
   "publishConfig": {
     "access": "public"

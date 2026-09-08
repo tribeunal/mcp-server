@@ -18,7 +18,7 @@
     "arbitration",
     "ai-agents"
   ],
-  "skills": "./skills/",
+  "skills": ["./", "./skills/"],
   "mcpServers": {
     "tribeunal": {
       "type": "http",

@@ -74,7 +74,15 @@ test('the plugin manifest version tracks the package version', () => {
   // is verified to work: it loads as `plugin:tribeunal:tribeunal`.
   assert.equal(plugin.mcpServers?.tribeunal?.type, 'http', 'the plugin must bring the remote MCP server');
   assert.equal(plugin.mcpServers.tribeunal.url, 'https://mcp.tribeunal.com/mcp');
-  assert.equal(plugin.skills, './skills/', 'the plugin must point at the shared skills directory');
+  // Both entries are load-bearing. Without './' the repo-root SKILL.md — the
+  // entry skill served at tribeunal.com/skill.md — is not part of the plugin at
+  // all; without './skills/' the eight workflow skills are not. Verified: the
+  // pair inventories as nine skills with no duplicates.
+  assert.deepEqual(
+    plugin.skills,
+    ['./', './skills/'],
+    'the plugin must ship the root entry skill and the shared skills directory',
+  );
   assert.equal(marketplace.plugins.length, 1);
   assert.equal(marketplace.plugins[0].name, 'tribeunal');
   assert.equal(marketplace.plugins[0].version, pkg.version, 'the marketplace entry must equal package.json');
