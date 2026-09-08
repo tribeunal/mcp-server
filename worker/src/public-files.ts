@@ -30,16 +30,21 @@ PublicFiles.get('/skill.md', async (c) => {
   try {
     upstream = await fetch(RAW_SKILL_URL, {
       cf: {
+        // `.md` is not a default-cached extension, so caching is opt-in.
         cacheEverything: true,
         // A NEGATIVE ttl means "do not cache". Zero would mean "cache it, but
         // treat it as expired", which still lets a failure be served once.
-        cacheTtlByStatus: { '200-299': 3600, '404': -1, '500-599': -1 },
+        // The whole 4xx-5xx range is covered, not just 404 and 5xx: GitHub
+        // rate-limits raw with 429 and can answer 403, and either would
+        // otherwise fall back to the origin's own headers under
+        // `cacheEverything`.
+        cacheTtlByStatus: { '200-299': 3600, '400-599': -1 },
       },
-    } as RequestInit);
+    });
   } catch {
-    return skillUnavailable(c);
+    return skillUnavailable();
   }
-  if (!upstream.ok) return skillUnavailable(c);
+  if (!upstream.ok) return skillUnavailable();
   return new Response(await upstream.text(), {
     status: 200,
     headers: {
@@ -58,7 +63,7 @@ PublicFiles.get('/llms.txt', () => new Response(LLMS_TXT, {
 }));
 
 /** Names the origin so a reader can fetch it directly while this is broken. */
-function skillUnavailable(_c: unknown): Response {
+function skillUnavailable(): Response {
   return new Response(
     `The Tribeunal skill could not be fetched from its origin.\n\nRead it directly at ${RAW_SKILL_URL}\n`,
     {

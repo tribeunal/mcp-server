@@ -39,7 +39,8 @@ through their browser, and there is no key to paste.
 | Claude Code (plugin) | `/plugin marketplace add tribeunal/mcp-server` then `/plugin install tribeunal` |
 | Any skills-aware agent | `npx skills add tribeunal/mcp-server` |
 | claude.ai | Settings → Connectors → Add custom connector → `https://mcp.tribeunal.com/mcp` |
-| Codex, opencode | `git clone https://github.com/tribeunal/mcp-server ~/.agents/skills/tribeunal` |
+| Codex | `git clone https://github.com/tribeunal/mcp-server ~/.agents/skills/tribeunal` |
+| opencode | `git clone https://github.com/tribeunal/mcp-server ~/.config/opencode/skills/tribeunal` |
 | OpenClaw | `openclaw skills install git:tribeunal/mcp-server` |
 | Hermes | `git clone https://github.com/tribeunal/mcp-server ~/.hermes/skills/tribeunal` |
 
