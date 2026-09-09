@@ -73,10 +73,10 @@ test('create_case shows the share link first and labels the bare url owner-only 
   });
   const text = textOf(r);
 
-  assert.ok(!/\nURL: /.test(text), 'no unqualified URL line for a private case — it is a 404 trap');
+  assert.ok(!/\nURL: /.test(text), 'no unqualified URL line for a private case — it is a login-wall/access-denied dead end');
   assert.match(
     text,
-    /Owner-only URL \(requires your login; 404s anyone else\): https:\/\/tribeunal\.test\/cases\/priv-slug\n/,
+    /Owner-only URL \(requires your login; access-denied for anyone else\): https:\/\/tribeunal\.test\/cases\/priv-slug\n/,
     'the bare url must be labeled owner-only',
   );
   assert.ok(
