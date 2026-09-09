@@ -1,5 +1,35 @@
 # Tribeunal MCP Server Changelog
 
+## [1.14.0]
+
+### Added
+- **A root `SKILL.md`** — one entry skill at one URL. `https://tribeunal.com/skill.md` and
+  `https://mcp.tribeunal.com/skill.md` both serve it, and because the repository root *is* the
+  skill, a clone into any skills directory installs it. It carries no workflow of its own: it says
+  how to connect, gives a REST fallback for runtimes with no MCP client, and routes to the eight
+  workflow skills, which resolve from disk when the repository is installed whole and from
+  `raw.githubusercontent.com` when only the one file is.
+- **`/skill.md` and `/llms.txt` on both hosts.** `/skill.md` PROXIES the canonical file on `main`
+  rather than keeping a copy, rebuilds its response headers from scratch, and never caches a failed
+  fetch. `/llms.txt` is a constant on each host, because it has to answer 200 before the branch
+  carrying `SKILL.md` reaches `main`; the root `llms.txt` is canonical and a unit test pins the
+  Worker's copy byte-equal to it. The app's copy adds a sitemap link, so the two hosts' `llms.txt`
+  differ by that line on purpose.
+- **`openclaw.plugin.json`**, and README install blocks for Codex, opencode, OpenClaw and Hermes
+  alongside the existing Claude Code, claude.ai and `npx skills add` routes.
+- Eval cases for the entry skill, with a recorded baseline failure for each
+  (`evals/tribeunal/BASELINE.md`).
+
+### Changed
+- The plugin's `skills` is now `["./", "./skills/"]`, so the entry skill ships alongside the eight
+  workflow skills — nine in the inventory. `npx skills add tribeunal/mcp-server` installs the entry
+  skill alone; `--full-depth` installs all nine.
+- The server `instructions` now also point at `https://tribeunal.com/skill.md`.
+
+### Fixed
+- `arbitrating-a-dispute` described a verdict as "signed and timestamped". No verdict signing
+  exists — only webhook deliveries are HMAC-signed. The line now says what is true.
+
 ## [1.13.0]
 
 ### Changed

@@ -68,7 +68,13 @@ Call the `tribeunal_get_current_user` tool. A successful response returns the us
 
 ## Install the skills too
 
-The tools alone do not carry the workflows. Eight Agent Skills ship in
+The tools alone do not carry the workflows. The entry skill is one file at one URL:
+
+```
+curl -s https://tribeunal.com/skill.md
+```
+
+Eight Agent Skills ship in
 [`skills/`](./skills/) — install them with the server (Claude Code:
 `/plugin marketplace add tribeunal/mcp-server` then `/plugin install tribeunal`), or copy
 the directory into whatever your runtime reads. Read `using-tribeunal` first; it routes to the other

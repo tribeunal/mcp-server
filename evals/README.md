@@ -41,6 +41,19 @@ evals/<skill>/<case>/prompt.md      frontmatter (name, tags, max_turns, timeout_
 evals/<skill>/<case>/graders/*.md   one grader per constraint
 ```
 
+Two more frontmatter keys exist for the root entry skill, whose whole point is working before anything
+is connected:
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `mcp: none` | `dev` | the run gets an EMPTY MCP server map and an allow list of exactly `Read`, `Skill` (plus `allowed_tools`) — no `mcp__tribeunal__*`, no `Bash`. A cold-start case must not be able to reach any server, dev or otherwise. |
+| `allowed_tools: [WebFetch]` | `[]` | inline array, appended to the allow list. `WebFetch` is what lets a root-only install follow the raw-URL fallback to a workflow skill or the error catalogue. |
+
+`--skill tribeunal` is root mode: the skill under test is the repo-root `SKILL.md`, and the `with`
+scaffold **copies** that one file to `.claude/skills/tribeunal/SKILL.md`. It is not symlinked and no
+cross-referenced skill is added — a root-only install is exactly the scenario, and the raw-URL
+fallback is what the cases are there to exercise.
+
 The prompt is what a real user would type. It never names the skill — if the case only passes because
 the prompt said "use the X skill", it is testing the harness, not the skill. `{{fixture.<key>}}`
 placeholders are filled by `evals/fixtures.ts`, which builds what the case needs through the real tool

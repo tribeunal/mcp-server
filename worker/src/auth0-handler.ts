@@ -4,6 +4,7 @@ import type {
   TokenExchangeCallbackResult,
 } from '@cloudflare/workers-oauth-provider';
 import { Hono } from 'hono';
+import { PublicFiles } from './public-files';
 import type { Env, HonoEnv, UserProps } from './types';
 import {
   buildAuth0AuthorizeUrl,
@@ -224,4 +225,5 @@ export function makeTokenExchangeCallback(env: Env) {
   };
 }
 
+app.route('/', PublicFiles);
 export { app as Auth0Handler };

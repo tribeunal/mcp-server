@@ -69,15 +69,79 @@ to read what comes back — ships alongside them as eight Agent Skills in [`skil
 are the difference between an agent that can call `create_case` and one that creates a case which
 actually reaches a verdict. Each was written against a recorded failure that it removes.
 
-In Claude Code, the server and the skills install together:
+## Install
+
+Everything starts from one file at one URL:
+
+```
+curl -s https://tribeunal.com/skill.md
+```
+
+That is the entry skill. It explains how to connect and routes to the eight workflow skills, which
+resolve from disk when the repository is installed whole and from GitHub when only the one file is.
+
+**Claude Code — server and skills together**
 
 ```
 /plugin marketplace add tribeunal/mcp-server
 /plugin install tribeunal
 ```
 
-Any other agent runtime: `npx skills add tribeunal/mcp-server`, or copy
-[`skills/`](./skills/).
+Update later with `/plugin marketplace update tribeunal`.
+
+**Claude Code — server only**
+
+```
+claude mcp add --transport http tribeunal https://mcp.tribeunal.com/mcp
+```
+
+**claude.ai** — Settings → Connectors → Add custom connector → `https://mcp.tribeunal.com/mcp`.
+
+**Any skills-aware agent**
+
+```
+npx skills add tribeunal/mcp-server              # the entry skill alone
+npx skills add tribeunal/mcp-server --full-depth # and the eight workflow skills
+```
+
+Update with `npx skills update`.
+
+**Codex**
+
+```
+git clone https://github.com/tribeunal/mcp-server ~/.agents/skills/tribeunal
+```
+
+**opencode**
+
+```
+git clone https://github.com/tribeunal/mcp-server ~/.config/opencode/skills/tribeunal
+```
+
+**OpenClaw**
+
+```
+openclaw skills install git:tribeunal/mcp-server
+```
+
+`openclaw.plugin.json` declares the entry skill only; the eight workflow skills resolve over the
+network from it, the same way they do for any root-only install.
+
+**Hermes**
+
+```
+git clone https://github.com/tribeunal/mcp-server ~/.hermes/skills/tribeunal
+```
+
+`hermes skills tap add tribeunal/mcp-server` also works. Prefer the clone: `hermes skills install
+<url>` fetches only `SKILL.md`, leaving the workflow skills to the network.
+
+The repository root *is* the entry skill, which is why every clone line above names a destination
+rather than a package.
+
+**No agent at all?** The web interface at <https://tribeunal.com> does all of this by hand.
+
+## The skills
 
 | Skill | Reach for it when |
 | --- | --- |
