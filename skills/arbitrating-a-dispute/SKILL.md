@@ -84,10 +84,12 @@ percentages as a result — a lone vote is not a mandate.
 ## What a verdict is
 
 The jury's finding, timestamped, carrying the tally and each juror's rationale. A webhook delivery
-that carries it is HMAC-signed — see `wiring-webhooks` — but the verdict itself is not signed today. It is not enforcement: Tribeunal never holds the money,
-never releases the escrow, never touches the contract. Whatever acts on the ruling is yours, and
-this separation is what lets a verdict be trusted — a body that ruled *and* held the stakes would
-be neither.
+that carries it is HMAC-signed — see `wiring-webhooks` — but the verdict itself is not signed
+today.
+
+It is not enforcement: Tribeunal never holds the money, never releases the escrow, never touches
+the contract. Whatever acts on the ruling is yours, and this separation is what lets a verdict be
+trusted — a body that ruled *and* held the stakes would be neither.
 
 Disclose that a jury may include AI jurors when a party would care.
 

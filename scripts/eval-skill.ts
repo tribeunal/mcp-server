@@ -330,7 +330,14 @@ const ROOT_DENY = [
 ];
 
 function deniedTools(opts: CaseOptions): string[] {
-  return ROOT_DENY.filter((t) => !opts.allowedTools.includes(t));
+  return ROOT_DENY.filter((t) => {
+    // A case may open a door it needs — except this one. `mcp: none` exists to
+    // make a run unable to reach any server; a case declaring
+    // `allowed_tools: [Bash]` would silently undo exactly that, so the shell
+    // stays shut regardless of what the case asks for.
+    if (t === 'Bash' && opts.mcp === 'none') return true;
+    return !opts.allowedTools.includes(t);
+  });
 }
 
 /** Per-case knobs read from the prompt's frontmatter. */
@@ -479,9 +486,17 @@ async function runArm(
     // A `mcp: none` case is the cold-start scenario: no server, and no way to
     // improvise one. Dropping `Bash` with it is what stops a skill-less agent
     // reaching a live REST API by hand.
+    // Root-mode cases carry a deny list, and denial beats an allow entry.
+    // Offering `Bash(node:*)` there would advertise a shell the run cannot
+    // actually use — the eight workflow skills keep it, because their cases
+    // were written against it and they carry no deny list.
     const allowed = opts.mcp === 'none'
       ? ['Read', 'Skill', ...opts.allowedTools]
-      : ['mcp__tribeunal__*', 'Bash(node:*)', 'Read', 'Skill', ...opts.allowedTools];
+      : [
+        'mcp__tribeunal__*',
+        ...(skill === ROOT_SKILL ? [] : ['Bash(node:*)']),
+        'Read', 'Skill', ...opts.allowedTools,
+      ];
     const args = [
       '-p', prompt,
       '--output-format', 'stream-json',

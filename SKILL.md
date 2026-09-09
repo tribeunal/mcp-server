@@ -113,7 +113,9 @@ The error catalogue — what each refusal means and whether retrying can ever he
 not mean what their names suggest.
 
 Every path above resolves by the rule in *Where this file lives* — from disk when the repository is
-installed whole, from the raw URL when only this file is.
+installed whole, from the raw URL when only this file is. If your runtime already lists these as
+skills by name — the Claude Code plugin registers all eight — invoke the name instead; the paths are
+for runtimes that have only files.
 
 These eight assume a connected server and an identity to act as. Nothing here is a substitute for
 running a case in your head — if the tools are not reachable, say so and stop, rather than

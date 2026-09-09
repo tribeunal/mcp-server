@@ -75,6 +75,29 @@ truth is compound: the case is tag-gated **and** the identity's daily free votes
 retry answer is *never today* (`skills/using-tribeunal/references/errors.md:19`). Knowing the
 catalogue exists at a fetchable URL, and that guessing is not allowed, is the whole lesson.
 
+### Measured install behaviour
+
+The root skill and the README both claim that `npx skills add tribeunal/mcp-server` installs the
+entry skill alone and `--full-depth` installs all nine. That reads backwards against the upstream
+CLI's "outside these container directories" wording, and a reviewer inferred from those docs that it
+must be inverted. It is not. Measured on this repository, skills CLI 1.5.24:
+
+```
+$ npx -y skills@latest add <repo> --list
+◇  Found 1 skill
+│    tribeunal
+
+$ npx -y skills@latest add <repo> --list --full-depth
+◇  Found 9 skills
+│    tribeunal, acting-on-verdicts, arbitrating-a-dispute, convening-a-team-jury,
+│    deciding-with-a-jury, serving-jury-duty, using-tribeunal, weighing-evidence,
+│    wiring-webhooks
+```
+
+A root `SKILL.md` shadows the nested ones by default; `--full-depth` lifts the shadow. Re-run both
+commands before changing that sentence — the docs do not describe this interaction, so reasoning
+from them produces the wrong answer.
+
 ### Baseline passes
 
 Kept as regression guards only. Neither earns guidance of its own, per `superpowers:writing-skills`.

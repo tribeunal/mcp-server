@@ -124,6 +124,9 @@ git clone https://github.com/tribeunal/mcp-server ~/.config/opencode/skills/trib
 openclaw skills install git:tribeunal/mcp-server
 ```
 
+`openclaw.plugin.json` declares the entry skill only; the eight workflow skills resolve over the
+network from it, the same way they do for any root-only install.
+
 **Hermes**
 
 ```
