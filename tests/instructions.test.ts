@@ -21,7 +21,7 @@ test('the instructions name the facts an agent otherwise gets wrong', () => {
   assert.match(SERVER_INSTRUCTIONS, /UUID/, 'ids are UUID-only');
   assert.match(SERVER_INSTRUCTIONS, /timeLeft/, '"open" past the deadline is the silent failure');
   assert.match(SERVER_INSTRUCTIONS, /tribeunal_await_verdict/, 'verdicts are asynchronous');
-  assert.match(SERVER_INSTRUCTIONS, /shareUrl/, 'a private case url 404s for everyone else');
+  assert.match(SERVER_INSTRUCTIONS, /shareUrl/, 'a private case url is a login wall / access-denied dead end for everyone else');
   assert.match(SERVER_INSTRUCTIONS, /using-tribeunal/, 'the handshake must point at the skills');
 });
 

@@ -109,7 +109,7 @@ platform. Leave them off anything you need an answer from.
 | --- | --- |
 | `caseLength` is minutes | It is seconds. A "30" is half a minute, not half an hour |
 | The create response contains the verdict | It does not. See `acting-on-verdicts` |
-| A private case's URL is shareable | It 404s for everyone else; send the share link |
+| A private case's URL is shareable | It sends outsiders to a login wall, then denies them; send the share link |
 | `minVotes` defaults to a real quorum | It defaults to none, so one vote can carry a case. Set it when turnout matters |
 | Setting a decision requirement guarantees one | Missing it voids the case instead of deciding it |
 

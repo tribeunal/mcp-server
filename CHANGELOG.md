@@ -1,5 +1,13 @@
 # Tribeunal MCP Server Changelog
 
+## [Unreleased]
+
+### Changed
+- **Private case url wording.** The server instructions, the `tribeunal_invite_jurors` description,
+  the `tribeunal_create_case` "Owner-only URL" line and the skills no longer say a private case's
+  bare url 404s outsiders: the web app now sends a logged-out visitor to log in and shows a
+  logged-in non-member an access-denied page. The `shareUrl` remains the link to hand out.
+
 ## [1.14.0]
 
 ### Added

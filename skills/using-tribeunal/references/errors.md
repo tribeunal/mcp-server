@@ -41,8 +41,8 @@ These are the expensive ones, because nothing raises an error.
 - **A tagged case nobody can vote on.** Tags gate voting behind a matching tag or a daily free-vote
   budget. A case created with tags can sit at zero votes while appearing perfectly normal. Leave
   tags off cases an agent creates for a decision it needs back.
-- **A private URL that 404s.** The bare case URL resolves only for the owner and admins. Sending it
-  to anyone else produces a not-found page, not an error you will see.
+- **A private URL that turns outsiders away.** The bare case URL resolves only for the owner and
+  admins. Sending it to anyone else produces a login prompt or an access-denied page — never the case.
 - **Awaiting a verdict that cannot come.** Waiting on a case still assembling its jury returns a
   notice rather than a verdict. Treat that notice as terminal for the wait.
 

@@ -67,9 +67,9 @@ count, so inviting three people and asking for twelve produces a case that never
 
 ## Sharing it
 
-A private case answers with a share link. That is the one to send: the bare case URL 404s for
-everyone except the owner and admins, so a teammate who receives it sees a missing page and has no
-way to tell it is a permissions problem.
+A private case answers with a share link. That is the one to send: the bare case URL is a dead end
+for everyone except the owner and admins — a logged-out teammate is sent to log in, and a logged-in
+one who isn't on the case sees an access-denied page, never the case itself.
 
 ## Member-side moves
 

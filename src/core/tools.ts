@@ -632,7 +632,7 @@ export const TOOL_DEFINITIONS = [
     title: 'Invite jurors',
     annotations: { title: 'Invite jurors', readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     description:
-      'Invite users to the jury of a case you own (owner or admin only). Works on any case regardless of jury type — an invitation is recruitment, not restriction: it notifies the invitee, and merely opening the case page while logged in seats them as a normal juror (no separate accept step); it never restricts the open participation a public case already grants everyone. Provide `invitees` (usernames or emails) and/or a `tribeId` to invite an entire tribe (every current member plus the chieftain) — at least one is required. You must be a member, owner or admin of any tribe you name. Each invitee is processed independently — the response reports invited / duplicate / not_found per entry. The response also echoes the case url and, for a private case, its view-only shareUrl — when telling people about a private case, give them the shareUrl (the bare url 404s anyone without access).',
+      'Invite users to the jury of a case you own (owner or admin only). Works on any case regardless of jury type — an invitation is recruitment, not restriction: it notifies the invitee, and merely opening the case page while logged in seats them as a normal juror (no separate accept step); it never restricts the open participation a public case already grants everyone. Provide `invitees` (usernames or emails) and/or a `tribeId` to invite an entire tribe (every current member plus the chieftain) — at least one is required. You must be a member, owner or admin of any tribe you name. Each invitee is processed independently — the response reports invited / duplicate / not_found per entry. The response also echoes the case url and, for a private case, its view-only shareUrl — when telling people about a private case, give them the shareUrl (the bare url sends outsiders to a login wall or an access-denied page).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -685,8 +685,9 @@ export async function dispatchToolCall(
         // Never fabricate a link: the backend always sends `url`, and a made-up
         // fallback would point at the wrong host.
         const url = createdCase.url;
-        // A locked-private case's bare url 404s everyone but the owner; its shareUrl
-        // is the only link safe to hand out, so it leads and the bare url is labeled.
+        // A locked-private case's bare url turns away everyone but the owner (login
+        // wall, then access-denied); its shareUrl is the only link safe to hand out,
+        // so it leads and the bare url is labeled.
         // A link-poll (private + guest votes) is the exception: link holders view AND
         // vote via the bare url, so that stays the shareable link, as for public cases.
         const lockedPrivate = createdCase.visibility === 'private' && createdCase.allowsGuestVotes !== true;
@@ -694,11 +695,11 @@ export async function dispatchToolCall(
         if (lockedPrivate && createdCase.shareUrl) {
           lines.push('', `You can view and share the case at: ${createdCase.shareUrl}`);
           if (url) {
-            lines.push('', `Owner-only URL (requires your login; 404s anyone else): ${url}`);
+            lines.push('', `Owner-only URL (requires your login; access-denied for anyone else): ${url}`);
           }
         } else if (lockedPrivate) {
           if (url) {
-            lines.push('', `Owner-only URL (requires your login; 404s anyone else): ${url}`);
+            lines.push('', `Owner-only URL (requires your login; access-denied for anyone else): ${url}`);
           }
           lines.push(
             '',
@@ -1125,7 +1126,7 @@ export async function dispatchToolCall(
         const result = await apiClient.inviteJurors(p.caseId, p.invitees, p.tribeId);
         const s = result.summary ?? {};
         // A private case's response echoes the owner's tokenized share link — surface
-        // it so a bare (404-trap) url shown earlier can still be corrected here.
+        // it so a bare (login-wall/access-denied) url shown earlier can still be corrected here.
         const shareLine = result.case?.shareUrl
           ? `\nShare link (view-only, works for anyone): ${result.case.shareUrl}`
           : '';

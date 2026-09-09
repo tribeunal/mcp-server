@@ -48,7 +48,7 @@ terminal.
 | --- | --- |
 | `open` means votable | It stays `open` past its deadline until the close job runs. Time left is the test. |
 | Searching open cases finds only open ones | Cases still assembling a jury match that filter too. |
-| A private case's URL can be passed around | It 404s for everyone else; the share link is the shareable one. |
+| A private case's URL can be passed around | It's a dead end for everyone else — a login wall or an access-denied page; the share link is the shareable one. |
 | Closing returns the verdict | Closing is asynchronous — the verdict lands separately. |
 | No verdict means a tie | It can instead mean a failed quorum or requirement, which is not a tie. |
 
