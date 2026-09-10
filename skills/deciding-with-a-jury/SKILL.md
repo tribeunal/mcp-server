@@ -64,6 +64,7 @@ Three teammates, invisible to everyone else. `convening-a-team-jury` owns the tr
 | `visibility` | `private` |
 | `juryType` | `invited` |
 | `jurorCount` | exactly the number of people you will invite |
+| `maxAiJurorPercentage` | `0` — otherwise the platform invites AI personas onto this panel up to the default 50% |
 | `tags` | omit entirely |
 
 Invite with `tribeunal_invite_jurors`, and send people the share link the case answers with.
