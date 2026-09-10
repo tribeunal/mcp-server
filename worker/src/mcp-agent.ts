@@ -35,7 +35,7 @@ export class TribeunalMCP extends McpAgent<Env, Record<string, never>, UserProps
   server = new McpServer(
     {
       name: 'tribeunal-mcp-server',
-      version: '1.14.1',
+      version: '1.14.2',
     },
     // We register tools on the low-level server via setRequestHandler (below),
     // so the `tools` capability must be declared explicitly — McpServer only

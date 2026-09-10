@@ -1,5 +1,12 @@
 # Tribeunal MCP Server Changelog
 
+## [1.14.2]
+
+### Changed
+- No functional changes. Published through the tag-triggered release workflow to prove npm
+  trusted publishing end to end — 1.14.1 had to be published by hand while the trusted
+  publisher was not yet configured.
+
 ## [1.14.1]
 
 ### Changed
