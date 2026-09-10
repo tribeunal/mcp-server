@@ -1,6 +1,6 @@
 # Tribeunal MCP Server Changelog
 
-## [Unreleased]
+## [1.14.1]
 
 ### Changed
 - **Private case url wording.** The server instructions, the `tribeunal_invite_jurors` description,
