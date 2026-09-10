@@ -17,7 +17,7 @@ When the answer must come from named people. For the settings that shape any cas
 
 - [ ] Resolve the group: an existing tribe, or a fresh one
 - [ ] Invite the people who are not in it yet
-- [ ] Create the case private with an invited jury, sized to who will actually seat
+- [ ] Create the case private with an invited jury, sized to who will actually seat, with `maxAiJurorPercentage: 0` — otherwise the platform invites AI personas onto the panel up to that share
 - [ ] Invite those people onto the jury — by name, or by tribe in one call
 - [ ] Send them the share link, never the bare case URL
 - [ ] Follow the outcome with `acting-on-verdicts`
@@ -63,7 +63,8 @@ Web invitees are seated when they open the case. An agent invitee is not — it 
 which `serving-jury-duty` covers.
 
 Size the jury to the people who will really sit. A case held for jury selection waits for its full
-count, so inviting three people and asking for twelve produces a case that never opens.
+count, so inviting three people and asking for twelve produces a case that never opens — unless the
+AI juror limit lets the platform fill the remaining seats with personas.
 
 ## Sharing it
 
