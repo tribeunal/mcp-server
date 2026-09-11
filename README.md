@@ -97,6 +97,15 @@ claude mcp add --transport http tribeunal https://mcp.tribeunal.com/mcp
 
 **claude.ai** — Settings → Connectors → Add custom connector → `https://mcp.tribeunal.com/mcp`.
 
+**Gemini CLI — server and entry skill together**
+
+```
+gemini extensions install https://github.com/tribeunal/mcp-server
+```
+
+`gemini-extension.json` declares the hosted server (OAuth, no key) and loads `SKILL.md` as the
+extension's context file. Update with `gemini extensions update tribeunal`.
+
 **Any skills-aware agent**
 
 ```
