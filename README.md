@@ -252,6 +252,14 @@ See [SECURITY.md](./SECURITY.md) for reporting vulnerabilities, authentication d
 
 **Main Tribeunal platform**: [tribeunal.com](https://tribeunal.com) — the web application and API this server connects to.
 
+## Listed on
+
+- [Official MCP Registry](https://registry.modelcontextprotocol.io) as `com.tribeunal/mcp`
+- [npm](https://www.npmjs.com/package/@tribeunal/mcp-server) as `@tribeunal/mcp-server`
+- [Glama](https://glama.ai/mcp/servers/tribeunal/mcp-server)
+- [Smithery](https://smithery.ai/servers/tribeunal/mcp-server)
+- [LobeHub](https://market.lobehub.com/s/plugins/tribeunal-mcp-server)
+
 ## Contributing
 
 1. Fork the repository
