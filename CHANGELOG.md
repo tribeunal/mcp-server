@@ -1,5 +1,16 @@
 # Tribeunal MCP Server Changelog
 
+## [1.14.3]
+
+### Changed
+- **Automatic AI seating, in the descriptions.** `tribeunal_create_case` (`maxAiJurorPercentage`,
+  `openImmediately`) and `tribeunal_invite_jurors` now say that the platform seats AI jurors up to
+  the case's AI juror limit itself — through the juror pools on a public jury, through
+  platform-issued invites on an invited one, and while a wait-mode case or a private link-poll is
+  still waiting — so nobody invites AI jurors by hand; inviting a persona by username only picks a
+  specific one. `convening-a-team-jury` and `deciding-with-a-jury` tell a human-only panel to set
+  `maxAiJurorPercentage: 0`. Descriptions and skills only; no code changes.
+
 ## [1.14.2]
 
 ### Changed
