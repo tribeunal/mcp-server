@@ -1,5 +1,14 @@
 # Tribeunal MCP Server Changelog
 
+## [Unreleased]
+
+### Added
+- **`gemini-extension.json`** at the repository root, so `gemini extensions install
+  https://github.com/tribeunal/mcp-server` registers the hosted server (Streamable HTTP, OAuth with
+  dynamic client registration) and loads `SKILL.md` as the extension's context file. With the
+  `gemini-cli-extension` topic on the repository, the Gemini CLI extensions gallery indexes it
+  daily from the git tags. The manifest carries the version, so a release now bumps nine files.
+
 ## [1.14.3]
 
 ### Changed
