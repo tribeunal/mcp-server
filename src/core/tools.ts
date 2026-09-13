@@ -7,6 +7,7 @@ import {
   SearchCasesSchema,
   GetCaseSchema,
   CreateCaseSchema,
+  withCaseDefaults,
   CloseCaseSchema,
   ListEvidenceSchema,
 } from '../tools/cases.js';
@@ -82,15 +83,15 @@ export const TOOL_DEFINITIONS = [
     name: 'tribeunal_create_case',
     title: 'Create case',
     annotations: { title: 'Create case', readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: 'Create a new case on Tribeunal for community decision-making (case = jury decides, advice = creator decides, poll = opinion gathering). Use this directly when the user wants to start, decide, settle, or put something to a vote and no specific existing case is referenced — do NOT search first. Set visibility to "private" to keep a case visible only to you, your invited jurors and admins (a private case runs an invited jury). Add allowsGuestVotes to a private case to make a link-poll instead: unlisted everywhere, but readable and votable by anyone you send the link to. A private case answers with a shareUrl — a view-only link (no voting/joining) you can send to anyone; rotate it from the case web page to revoke every old link at once.',
+    description: 'Create a new case on Tribeunal for community decision-making (case = jury decides, advice = creator decides, poll = opinion gathering). Use this directly when the user wants to start, decide, settle, or put something to a vote and no specific existing case is referenced — do NOT search first. Cases are private by default — visible only to you, your invited jurors and admins, with an invited jury; set visibility to "public" for a case anyone can find, read and join. Add allowsGuestVotes to a private case to make a link-poll instead: unlisted everywhere, but readable and votable by anyone you send the link to. A private case answers with a shareUrl — a view-only link (no voting/joining) you can send to anyone; rotate it from the case web page to revoke every old link at once.',
     inputSchema: {
       type: 'object',
       properties: {
         title: { type: 'string', minLength: 3, maxLength: 200, description: 'Case title — the question or statement to be decided' },
         description: { type: 'string', minLength: 10, description: 'Context, background, and criteria for the case' },
         type: { type: 'string', enum: ['case', 'advice', 'poll'], description: 'Case type — case (binding jury decision), advice (input for the creator), or poll (opinion gathering)' },
-        juryType: { type: 'string', enum: ['public', 'invited'], default: 'public', description: 'Who can participate — public (anyone) or invited only' },
-        visibility: { type: 'string', enum: ['public', 'private'], default: 'public', description: 'Case visibility — public (anyone can find and read it) or private (only you, your invited jurors and admins). A private case must use an invited jury; omit juryType and it is set to invited automatically. One exception: set allowsGuestVotes on a private case and it becomes a link-poll — still absent from every listing, search and feed, but readable and votable by anyone you send the link to — which takes a public jury instead.' },
+        juryType: { type: 'string', enum: ['public', 'invited'], description: 'Who can participate — public (anyone) or invited only. Omitted, it follows the visibility: invited on a private case, public on a public case or a link-poll.' },
+        visibility: { type: 'string', enum: ['public', 'private'], description: 'Case visibility — private (the default: only you, your invited jurors and admins) or public (anyone can find and read it). Omitted, the case is private — unless juryType is "public", which makes a public case. A private case must use an invited jury; omit juryType and it is set to invited automatically. One exception: set allowsGuestVotes on a private case and it becomes a link-poll — still absent from every listing, search and feed, but readable and votable by anyone you send the link to — which takes a public jury instead.' },
         sides: {
           type: 'array',
           items: {
@@ -671,14 +672,10 @@ export async function dispatchToolCall(
     switch (toolName) {
       // Case tools
       case 'tribeunal_create_case': {
-        // A private case must run an invited jury, so an omitted juryType is coerced here
-        // BEFORE zod's .default('public') would force a rejecting public/private conflict.
-        // A private case that allows anonymous voting is the exception — it is a link-poll
-        // and needs the public jury its link holders vote on, so leave that one alone.
-        if (params.visibility === 'private' && params.juryType === undefined) {
-          params.juryType = params.allowsGuestVotes === true ? 'public' : 'invited';
-        }
-        const p = CreateCaseSchema.parse(params);
+        // Cases are private by default: an omitted visibility / juryType is resolved here
+        // (withCaseDefaults — private + invited; a public jury alone stays a public case; a
+        // link-poll keeps its public jury) BEFORE the schema's conflict check runs.
+        const p = CreateCaseSchema.parse(withCaseDefaults(params));
         // UUID-only outward contract: drop the numeric `id` so the agent reuses
         // the `uuid` on follow-up calls (a numeric id would 500 backend-side).
         const createdCase = caseWithUuidOnly(await apiClient.createCase(p));

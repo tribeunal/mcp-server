@@ -124,17 +124,19 @@ await client.callTool('tribeunal_mark_evidence', { kind: 'file', id: 'case-file-
 ### Await a Verdict (executor pattern)
 
 ```typescript
-// 1. Open the question for the humans to decide.
+// 1. Open the question for the humans to decide. Cases are private by default, so a
+//    question for the whole platform says so.
 const created = await client.callTool('tribeunal_create_case', {
   title: 'Did the homepage redesign land well?',
   description: 'Ship the follow-up automatically once the jury decides.',
   type: 'poll',
+  visibility: 'public',
   sides: [{ name: 'Ship it' }, { name: 'Not yet' }],
 });
 const caseId = /* uuid from created */;
 
-// A private case is visible only to you, your invited jurors and admins. Pass
-// visibility: 'private'; an omitted juryType is set to 'invited' automatically.
+// A private case — the default — is visible only to you, your invited jurors and admins.
+// visibility: 'private' is stated for clarity; an omitted juryType is set to 'invited'.
 const priv = await client.callTool('tribeunal_create_case', {
   title: 'Internal: which vendor do we pick?',
   description: 'Only our invited reviewers should see or decide this.',
@@ -164,6 +166,7 @@ const arbitration = await client.callTool('tribeunal_create_case', {
   title: 'Should the deposit be returned in full?',
   description: 'Tenant and landlord disagree on cleaning costs. Both submitted photos.',
   type: 'case',
+  visibility: 'public',
   arbitrationMode: true,
   decisionRequirement: 'qualified',
   minVotes: 5,

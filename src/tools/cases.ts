@@ -18,12 +18,32 @@ export const GetCaseSchema = z.object({
   id: caseUuid('Case UUID (the case\'s `uuid` field)'),
 });
 
+/**
+ * Cases are private by default. The one place that turns an omitted visibility / juryType
+ * into a concrete pair — the same rule the backend applies in App\Service\TrialDefaults:
+ *   - visibility omitted → private, unless the caller asked for a public jury ("public
+ *     jury" has always meant a public case, anonymous voting or not).
+ *   - juryType omitted   → follows the visibility: invited on a private case, public on a
+ *     public case or a link-poll (private + allowsGuestVotes).
+ * Explicit values pass through untouched, so a conflict still reaches the schema's check.
+ */
+export function withCaseDefaults<T extends { visibility?: unknown; juryType?: unknown; allowsGuestVotes?: unknown }>(params: T): T {
+  const wantsGuests = params.allowsGuestVotes === true;
+  const visibility = params.visibility === undefined
+    ? (params.juryType === 'public' ? 'public' : 'private')
+    : params.visibility;
+  const juryType = params.juryType === undefined
+    ? (visibility === 'private' && !wantsGuests ? 'invited' : 'public')
+    : params.juryType;
+  return { ...params, visibility, juryType };
+}
+
 export const CreateCaseSchema = z.object({
   title: z.string().min(3).max(200).describe('Case title — the question or statement to be decided'),
   description: z.string().min(10).describe('Context, background, and criteria for the case'),
   type: z.enum(['case', 'advice', 'poll']).describe('Case type — case (binding jury decision), advice (input for the creator), or poll (opinion gathering)'),
-  juryType: z.enum(['public', 'invited']).default('public').describe('Who can participate — public (anyone) or invited only'),
-  visibility: z.enum(['public', 'private']).default('public').describe('Case visibility — public (anyone can find and read it) or private (only you, your invited jurors and admins). A private case must use an invited jury; omit juryType and it is set to invited automatically. One exception: set allowsGuestVotes on a private case and it becomes a link-poll — still absent from every listing, search and feed, but readable and votable by anyone you send the link to — which takes a public jury instead.'),
+  juryType: z.enum(['public', 'invited']).optional().describe('Who can participate — public (anyone) or invited only. Omitted, it follows the visibility: invited on a private case, public on a public case or a link-poll.'),
+  visibility: z.enum(['public', 'private']).optional().describe('Case visibility — private (the default: only you, your invited jurors and admins) or public (anyone can find and read it). Omitted, the case is private — unless juryType is "public", which makes a public case. A private case must use an invited jury; omit juryType and it is set to invited automatically. One exception: set allowsGuestVotes on a private case and it becomes a link-poll — still absent from every listing, search and feed, but readable and votable by anyone you send the link to — which takes a public jury instead.'),
   sides: z.array(z.object({
     name: z.string().describe('Option/choice name'),
     description: z.string().optional().describe('Optional description for this choice'),
@@ -42,13 +62,14 @@ export const CreateCaseSchema = z.object({
   // A private case is normally visible only to its owner, invited jurors and admins, so
   // it must run an invited jury. The exception is the link-poll: a private case that
   // allows anonymous voting is deliberately open to whoever holds its link, and that
-  // audience needs a public jury to vote at all. The handler pre-coerces an omitted
-  // juryType, so reaching here with a mismatch means the caller asked for it explicitly.
-  const isLinkPoll = data.visibility === 'private'
+  // audience needs a public jury to vote at all. withCaseDefaults fills an omitted pair
+  // (the handler applies it too), so a mismatch here means the caller asked for it explicitly.
+  const { visibility, juryType } = withCaseDefaults(data);
+  const isLinkPoll = visibility === 'private'
     && data.allowsGuestVotes === true
-    && data.juryType === 'public';
+    && juryType === 'public';
 
-  if (data.visibility === 'private' && data.juryType !== 'invited' && !isLinkPoll) {
+  if (visibility === 'private' && juryType !== 'invited' && !isLinkPoll) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['juryType'],
@@ -60,7 +81,7 @@ export const CreateCaseSchema = z.object({
   // panel. Visibility is deliberately not part of this rule. Caught here so the caller
   // gets a named parameter and a reason instead of a bare 400 from the backend, which
   // enforces the same rule in an entity constraint and a DB CHECK.
-  if (data.allowsGuestVotes === true && data.juryType !== 'public') {
+  if (data.allowsGuestVotes === true && juryType !== 'public') {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['allowsGuestVotes'],

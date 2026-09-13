@@ -46,6 +46,8 @@ State every one of these. A dispute settled by an unstated default is a dispute 
 | Setting | Why |
 | --- | --- |
 | `arbitrationMode: true` | Turns on everything below and bars the owner from its jury |
+| `visibility` | Cases are private by default. `public` for a dispute the platform's jurors decide; `private` only when the panel is named — and then invite it, or nobody can ever seat |
+| `juryType` | `public` with a public case; `invited` with a private one, followed by `tribeunal_invite_jurors` |
 | `minVotes` at least 2 | Without a real quorum a single vote can decide a contested payout |
 | `decisionRequirement` | Says what counts as agreement — a plurality is rarely enough for money |
 | `jurorCount` | Size it to who will actually seat, or it never opens |
@@ -108,3 +110,4 @@ rather than poll — see `wiring-webhooks`.
 | Any verdict is a ruling | Quorum and requirement failures decide nothing |
 | Evidence can be tidied after the ruling | Marks freeze at close, permanently |
 | Arbitration can reach a wider crowd with guest votes | The two cannot be combined |
+| Leaving `visibility` out is harmless | It makes the case private with an invited jury; with nobody invited it closes Void at the deadline |

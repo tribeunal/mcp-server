@@ -198,7 +198,7 @@ export class TribeunalAPIClient {
     title: string;
     description: string;
     type: 'case' | 'advice' | 'poll';
-    juryType: 'public' | 'invited';
+    juryType?: 'public' | 'invited';
     visibility?: 'public' | 'private';
     sides: Array<{ name: string; description?: string; image?: string }>;
     caseLength?: number;

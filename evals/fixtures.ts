@@ -143,6 +143,9 @@ async function createCase(who: 'admin' | 'eval', opts: CaseOpts): Promise<string
     type: opts.type ?? 'poll',
     sides: opts.sides ?? [{ name: 'Yes' }, { name: 'No' }],
     caseLength: 3600,
+    // Cases are private by default; a fixture is public unless it says otherwise, because
+    // most scenarios have the "eval" identity find, view or vote on an admin-owned case.
+    visibility: 'public',
     ...rest,
   });
   return firstUuid(out);
