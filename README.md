@@ -168,7 +168,7 @@ rather than a package.
 All tools carry MCP annotations (`title`, `readOnlyHint`/`destructiveHint`) so clients can gate confirmations appropriately. 18 of the 39 are read-only; four are destructive (`close_case`, `leave_tribe`, `delete_webhook`, `jury_duty_reject`) and one is open-world (`set_side_image`).
 
 ### Cases
-- `tribeunal_create_case` — create a case (case = jury decides, advice = creator decides, poll = opinion), public or private, with 2-10 sides. Cases open for voting immediately by default — invited jurors are still invited and can view, join and vote while it is open. Pass `openImmediately: false` to hold the case in jury selection until `jurorCount` (2-100, default 12) jurors have joined, and only then open it. Each side in `sides[]` accepts an optional `image` https URL, fetched and re-encoded server-side and shown on its vote card
+- `tribeunal_create_case` — create a case (case = jury decides, advice = creator decides, poll = opinion), private by default (invited jury) or public, with 2-10 sides. Cases open for voting immediately by default — invited jurors are still invited and can view, join and vote while it is open. Pass `openImmediately: false` to hold the case in jury selection until `jurorCount` (2-100, default 12) jurors have joined, and only then open it. Each side in `sides[]` accepts an optional `image` https URL, fetched and re-encoded server-side and shown on its vote card
 - `tribeunal_search_cases` — find cases by query, status, type, or tags
 - `tribeunal_get_case` — detailed case info (sides, comments, activity)
 - `tribeunal_close_case` — close your open case early to trigger the verdict *(destructive)*

@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Changed
+- **Cases are private by default.** `tribeunal_create_case` no longer defaults `visibility` to
+  `public`: an omitted `visibility` makes a private case with an invited jury, an omitted `juryType`
+  follows the visibility (invited on a private case, public on a public case or a link-poll), and a
+  request that asks for `juryType: "public"` still makes a public case, anonymous voting or not, so
+  callers who only ever said "public jury" are unaffected. `allowsGuestVotes` alone now makes a private
+  link-poll. The backend (`POST /api/cases`, the CLI and the web form) changed the same way. The
+  server instructions say so; the `deciding-with-a-jury` and `arbitrating-a-dispute` recipes, the
+  README, the root `SKILL.md` and `docs/examples.md` now state `visibility`, since leaving it out no
+  longer produces a case anyone can browse to. The JSON schema no longer advertises a static
+  `default` for `visibility` (the real default depends on `juryType`).
+
 ### Added
 - **`gemini-extension.json`** at the repository root, so `gemini extensions install
   https://github.com/tribeunal/mcp-server` registers the hosted server (Streamable HTTP, OAuth with

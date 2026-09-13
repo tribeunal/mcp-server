@@ -49,6 +49,7 @@ For a technical call you want back in minutes.
 | Setting | Value |
 | --- | --- |
 | `type` | `case` |
+| `visibility` | `public` |
 | `juryType` | `public` |
 | `jurorCount` | 3 (or up to 5) |
 | `maxAiJurorPercentage` | 100 |
@@ -82,12 +83,22 @@ Opinion from people who have no accounts — a Discord, a mailing list.
 
 Unlisted everywhere, votable by anyone holding the link. `juryType` is stated because this is the one
 place the rest of this skill misleads you: private normally means an invited jury, and a link poll is
-the exception that requires a public one. Leaving it out works only because the server defaults it.
+the exception that requires a public one. Leaving it out works only because the server derives it from
+the visibility and the guest flag.
 
 ### A community case
 
 Open to the platform, found by browsing. This is the one where `tags` belong: real people filter by
-them. Defaults are reasonable here.
+them.
+
+| Setting | Value |
+| --- | --- |
+| `visibility` | `public` |
+| `juryType` | `public` |
+| `tags` | the ones people browse by |
+
+Cases are **private by default**, with an invited jury. A community case has to say `public`; leave
+`visibility` out and nobody browsing the platform will ever see it.
 
 ## The two settings that kill a case silently
 
@@ -111,6 +122,7 @@ platform. Leave them off anything you need an answer from.
 | `caseLength` is minutes | It is seconds. A "30" is half a minute, not half an hour |
 | The create response contains the verdict | It does not. See `acting-on-verdicts` |
 | A private case's URL is shareable | It sends outsiders to a login wall, then denies them; send the share link |
+| Leaving `visibility` out makes a public case | It makes a private one with an invited jury. Say `public` when people should find it; a `juryType` of `public` alone also makes a public case |
 | `minVotes` defaults to a real quorum | It defaults to none, so one vote can carry a case. Set it when turnout matters |
 | Setting a decision requirement guarantees one | Missing it voids the case instead of deciding it |
 

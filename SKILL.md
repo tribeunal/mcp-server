@@ -57,7 +57,7 @@ Running the server locally instead is `npx -y @tribeunal/mcp-server` with `TRIBE
 `https://tribeunal.com/api`, header `X-API-Key: <key>` (`Authorization: Bearer <key>` is accepted
 too), and a key is minted at `https://tribeunal.com/profile/api-key`.
 
-- `POST /api/cases` opens a case · `GET /api/cases/{uuid}` reads one
+- `POST /api/cases` opens a case — private with an invited jury unless the body says `"visibility": "public"` · `GET /api/cases/{uuid}` reads one
 - `GET /api/cases/{uuid}/comments` reads the record · `POST` to it writes analysis
 - One trap — voting and joining are **not** under `/api`. They live at the site root
   as `POST /cases/{uuid}/vote` (form field `side_id`) and `POST /cases/{uuid}/jury/join`.

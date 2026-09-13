@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { dispatchToolCall } from '../src/core/tools.js';
-import { CreateCaseSchema } from '../src/tools/cases.js';
+import { CreateCaseSchema, withCaseDefaults } from '../src/tools/cases.js';
 import type { TribeunalAPIClient } from '../src/client/api-client.js';
 
 /** Fake client that records the createCase arg and returns a canned created case. */
@@ -96,12 +96,57 @@ test('private + allowsGuestVotes without a juryType coerces to public, not invit
   );
 });
 
-test('omitting visibility defaults the body to public', async () => {
+test('omitting visibility and juryType makes a private case with an invited jury', async () => {
   const record: { data?: Record<string, unknown> } = {};
   await dispatchToolCall(fakeClient(record), 'tribeunal_create_case', { ...baseArgs });
 
+  assert.equal(record.data?.visibility, 'private');
+  assert.equal(record.data?.juryType, 'invited');
+});
+
+test('a public juryType alone still makes a public case', async () => {
+  const record: { data?: Record<string, unknown> } = {};
+  await dispatchToolCall(fakeClient(record), 'tribeunal_create_case', { ...baseArgs, juryType: 'public' });
+
+  assert.equal(record.data?.visibility, 'public', 'a public jury cannot sit on a locked private case');
+  assert.equal(record.data?.juryType, 'public');
+});
+
+test('a public juryType with allowsGuestVotes stays a public case', async () => {
+  const record: { data?: Record<string, unknown> } = {};
+  await dispatchToolCall(fakeClient(record), 'tribeunal_create_case', { ...baseArgs, juryType: 'public', allowsGuestVotes: true });
+
+  assert.equal(record.data?.visibility, 'public', 'the documented open poll must stay public');
+  assert.equal(record.data?.juryType, 'public');
+});
+
+test('allowsGuestVotes alone makes a private link-poll', async () => {
+  const record: { data?: Record<string, unknown> } = {};
+  await dispatchToolCall(fakeClient(record), 'tribeunal_create_case', { ...baseArgs, allowsGuestVotes: true });
+
+  assert.equal(record.data?.visibility, 'private');
+  assert.equal(record.data?.juryType, 'public');
+  assert.equal(record.data?.allowsGuestVotes, true);
+});
+
+test('visibility public alone gets a public jury', async () => {
+  const record: { data?: Record<string, unknown> } = {};
+  await dispatchToolCall(fakeClient(record), 'tribeunal_create_case', { ...baseArgs, visibility: 'public' });
+
   assert.equal(record.data?.visibility, 'public');
   assert.equal(record.data?.juryType, 'public');
+});
+
+test('withCaseDefaults leaves explicit values alone, conflicts included', () => {
+  assert.deepEqual(
+    withCaseDefaults({ visibility: 'private', juryType: 'public' }),
+    { visibility: 'private', juryType: 'public' },
+    'an explicit conflict must reach the schema check, not be papered over',
+  );
+  assert.deepEqual(
+    withCaseDefaults({ visibility: 'public', juryType: 'invited', allowsGuestVotes: false }),
+    { visibility: 'public', juryType: 'invited', allowsGuestVotes: false },
+  );
 });
 
 test('CreateCaseSchema rejects private + public directly', () => {

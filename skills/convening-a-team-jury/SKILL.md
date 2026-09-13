@@ -17,7 +17,7 @@ When the answer must come from named people. For the settings that shape any cas
 
 - [ ] Resolve the group: an existing tribe, or a fresh one
 - [ ] Invite the people who are not in it yet
-- [ ] Create the case private with an invited jury, sized to who will actually seat, with `maxAiJurorPercentage: 0` — otherwise the platform invites AI personas onto the panel up to that share
+- [ ] Create the case private with an invited jury (the default — state both anyway), sized to who will actually seat, with `maxAiJurorPercentage: 0` — otherwise the platform invites AI personas onto the panel up to that share
 - [ ] Invite those people onto the jury — by name, or by tribe in one call
 - [ ] Send them the share link, never the bare case URL
 - [ ] Follow the outcome with `acting-on-verdicts`
