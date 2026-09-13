@@ -1,6 +1,6 @@
 # Tribeunal MCP Server Changelog
 
-## [Unreleased]
+## [1.15.0]
 
 ### Changed
 - **Cases are private by default.** `tribeunal_create_case` no longer defaults `visibility` to
