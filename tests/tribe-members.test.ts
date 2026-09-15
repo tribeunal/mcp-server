@@ -106,12 +106,25 @@ test('list_tribe_members is advertised with a UUID pattern on tribeId', () => {
   assert.deepEqual(props.required, ['tribeId']);
 });
 
-test('the tool count is 39 including join_jury', () => {
+test('the tool count is 41', () => {
   // The count is pinned so a new tool cannot land without also updating the
-  // "N tools" claims in README.md, llms-install.md, worker/README.md,
-  // stdio-register.ts and mcp-agent.ts. Raised 35 -> 38 by the three webhook
-  // tools, then 38 -> 39 by tribeunal_join_jury.
-  assert.equal(TOOL_DEFINITIONS.length, 39, 'the shared tool count is 39');
+  // "N tools" claims across the whole surface: README.md, SKILL.md, llms.txt,
+  // llms-install.md, docs/examples.md, worker/README.md, server.json,
+  // gemini-extension.json, openclaw.plugin.json, the app's
+  // templates/page/mcp.html.twig, and the app's docs (docs/AUTH0_CONTRACT.md,
+  // docs/TRIALS.md, docs/JURIES.md, docs/WEBHOOKS.md, docs/INTEGRATION.md).
+  // Raised 35 -> 38 by the three webhook tools, 38 -> 39 by tribeunal_join_jury,
+  // then 39 -> 41 by the TDQS tool-surface redesign (2026-09-15): removed
+  // tribeunal_get_vote_stats, tribeunal_get_current_user, and
+  // tribeunal_jury_duty_dashboard/allowance/history/accept/reject (7 gone);
+  // renamed tribeunal_jury_duty_status -> tribeunal_get_jury_duty_status,
+  // tribeunal_jury_duty_start/cancel -> tribeunal_start_jury_duty/
+  // tribeunal_cancel_jury_duty, tribeunal_set_side_image ->
+  // tribeunal_update_side_image (net zero); added tribeunal_update_case,
+  // tribeunal_delete_case, tribeunal_update_comment, tribeunal_delete_comment,
+  // tribeunal_leave_jury, tribeunal_update_tribe, tribeunal_delete_tribe,
+  // tribeunal_remove_tribe_member, tribeunal_update_webhook (9 new).
+  assert.equal(TOOL_DEFINITIONS.length, 41, 'the shared tool count is 41');
   assert.ok(TOOL_DEFINITIONS.find((d) => d.name === 'tribeunal_list_tribe_members'));
 });
 

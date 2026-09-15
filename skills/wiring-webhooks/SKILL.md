@@ -21,6 +21,7 @@ When something automated must react to a case. A person watching an outcome want
 - [ ] Verify signature and timestamp on every delivery
 - [ ] Deduplicate on the delivery id
 - [ ] Answer 2xx fast, then do the work
+- [ ] Change the event list or pause delivery with `tribeunal_update_webhook`, never by deleting
 
 ## Order matters
 
@@ -76,10 +77,18 @@ ignore an id you have already seen. Without that, "release the escrow" runs twic
 Answer 2xx quickly and do the work afterwards. A receiver that finishes first looks slow, gets
 treated as failed, and is retried — creating the duplicate it was trying to avoid.
 
+## Changing an endpoint
+
+`tribeunal_update_webhook` changes `events` and/or `active` on an existing endpoint — pause delivery
+without losing the subscription list, or narrow/widen which events fire, at least one field. That is
+all it touches: the URL and the signing secret are not editable through this tool, on any transport,
+by design (repointing the URL or minting a fresh secret is a bigger capability than this tool grants).
+To change either, delete the endpoint and create a new one — see below for what that costs you.
+
 ## No rotate tool
 
 There is no rotate and no ping over these tools — deliberately, since both are ways to escalate a
-read into a write. If a secret is compromised:
+read into a write. If a secret is compromised, or the URL needs to move:
 
 1. The REST API can rotate it, keeping the endpoint and its subscriptions.
 2. Or delete the endpoint and create a new one, which mints a fresh secret.
@@ -105,3 +114,4 @@ you.
 | One event, one delivery | At-least-once; deduplicate on the delivery id |
 | Verifying the parsed JSON is equivalent | Re-serialising breaks the digest; use raw bytes |
 | A vote comment raises `comment.created` | It rides inside `vote.cast` |
+| `tribeunal_update_webhook` can repoint the URL or mint a new secret | It only changes `events` and `active`; delete and recreate for either |

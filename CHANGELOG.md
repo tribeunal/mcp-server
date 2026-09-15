@@ -1,5 +1,70 @@
 # Tribeunal MCP Server Changelog
 
+## [2.0.0]
+
+Tool-surface redesign for Glama's Tool Definition Quality Score (design:
+`docs/superpowers/specs/2026-09-15-tdqs-tool-redesign-design.md`). 41 tools, up from 39 in 1.x:
+nine names removed, eleven added.
+
+### Breaking
+
+Nine tool names are gone. Update any code or agent instructions that call them by name:
+
+| 1.x | 2.0.0 |
+|---|---|
+| `jury_duty_status`, `jury_duty_dashboard`, `jury_duty_allowance`, `jury_duty_history` | `get_jury_duty_status` (one call; `historyDays`, `assignmentsPage`, `assignmentsLimit` optional) |
+| `jury_duty_start` / `jury_duty_cancel` | `start_jury_duty` / `cancel_jury_duty` |
+| `jury_duty_accept` | removed — a matched seat is already yours; vote with `cast_vote` once the case is open |
+| `jury_duty_reject` | `leave_jury` (case UUID, not memberId; requeues a matchmaker seat) |
+| `get_vote_stats` | removed — `get_case` carries the same counts |
+| `get_current_user` | `get_user` with no `userId` |
+| `set_side_image` | `update_side_image` |
+
+### Added
+- **`tribeunal_update_case`** — change an open case's title or description (title locks once a
+  vote has ever been cast).
+- **`tribeunal_delete_case`** — permanently delete a case, before any vote has ever been cast.
+- **`tribeunal_update_comment`** — edit your own comment's text.
+- **`tribeunal_delete_comment`** — permanently remove a comment (author, case owner or admin).
+- **`tribeunal_leave_jury`** — give up a jury seat; refused once you have voted; requeues a
+  matched matchmaking search.
+- **`tribeunal_update_tribe`** — change a tribe's name, description, intro or visibility.
+- **`tribeunal_delete_tribe`** — permanently delete a tribe you own or admin.
+- **`tribeunal_remove_tribe_member`** — remove a member from a tribe you own or admin.
+- **`tribeunal_update_webhook`** — change which events are delivered, or pause/resume delivery;
+  the URL and signing secret still cannot be changed over MCP.
+- **`tribeunal_update_side_image`** — renamed from `set_side_image` (see Breaking above); listed
+  here because its annotation changed too (now `idempotentHint: true`).
+- **`tribeunal_get_jury_duty_status`** — one call for your waiting search, seated assignments
+  (paginated) and daily allowance, replacing four separate reporting tools.
+
+### Changed
+- **Every one of the 41 tool descriptions was rewritten** against Glama's Tool Definition Quality
+  Score rubric: purpose, usage guidance naming sibling tools, behavioural transparency (refusal
+  codes, reversibility, rate limits), parameter semantics beyond the schema, and the return shape.
+- **`idempotentHint: true` added** to every read-only tool and to `update_case`, `update_comment`,
+  `update_tribe`, `update_webhook`, `update_side_image` (and to `mark_evidence`, `unmark_evidence`,
+  `rate_evidence` where a repeat call is verified to be a no-op or a replace).
+- **Server `instructions`** gained a bullet: every tool is `tribeunal_<verb>_<noun>`;
+  `tribeunal_get_user` with no `userId` is your own identity; `tribeunal_get_case` already carries
+  `totalVotes` and each side's `votePercentage`; the API allows 100 requests/hour per caller.
+- **Requires new app backend endpoints**, shipped on branch `feat/mcp-lifecycle-api` of the
+  `tribeunal/app` repository (deploy app → worker image → worker node before this release):
+  `PATCH /api/cases/{uuid}`, `DELETE /api/cases/{uuid}`, `PATCH /api/comments/{id}`,
+  `DELETE /api/comments/{id}`, `POST /api/cases/{uuid}/jury/leave`,
+  `GET /api/jury-duty/index?page=&limit=` (paginated), `DELETE /api/tribes/{uuid}/members/{user}`,
+  `PATCH /api/webhooks/{uuid}/delivery`.
+
+### Removed
+- `tribeunal_jury_duty_status`, `tribeunal_jury_duty_dashboard`, `tribeunal_jury_duty_allowance`,
+  `tribeunal_jury_duty_history` — folded into `tribeunal_get_jury_duty_status` (see Breaking).
+- `tribeunal_jury_duty_accept` — a no-op: a matched seat is already yours, nothing to accept.
+- `tribeunal_jury_duty_reject` — absorbed by `tribeunal_leave_jury`, which also requeues the
+  matchmaker search.
+- `tribeunal_get_vote_stats` — a strict subset of `tribeunal_get_case`, which already carries
+  `totalVotes` and each side's `totalVotes`/`votePercentage`.
+- `tribeunal_get_current_user` — folded into `tribeunal_get_user` with no `userId`.
+
 ## [1.15.0]
 
 ### Changed

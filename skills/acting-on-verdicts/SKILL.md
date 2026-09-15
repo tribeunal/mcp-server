@@ -28,7 +28,7 @@ someone else's is `serving-jury-duty`.
 | --- | --- | --- |
 | The final ruling | `tribeunal_await_verdict` | State-based. Returns immediately if the case is already settled |
 | To follow a case as it runs | `tribeunal_await_case_activity` | Cursor-based feed of comments, votes and marks |
-| A snapshot now, no waiting | `tribeunal_get_vote_stats` | One read |
+| A snapshot now, no waiting | `tribeunal_get_case` | One read — it already carries `totalVotes` and each side's `votePercentage`, no separate stats tool |
 | To be told, without asking | Webhooks | See `wiring-webhooks` |
 
 Long polls have a server-side ceiling and return before it if something happens. A return is not a

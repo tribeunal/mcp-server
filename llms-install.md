@@ -64,7 +64,7 @@ No manual install step is needed — `npx` fetches the package on first run.
 
 ## Verify the installation
 
-Call the `tribeunal_get_current_user` tool. A successful response returns the user's Tribeunal username. If it fails with 401, the API key is wrong or was revoked — generate a new one at https://tribeunal.com/profile/api-key.
+Call the `tribeunal_get_user` tool with no `userId` — an omitted `userId` means "my own account", so there is no separate current-user tool. A successful response returns the user's Tribeunal username. If it fails with 401, the API key is wrong or was revoked — generate a new one at https://tribeunal.com/profile/api-key.
 
 ## Install the skills too
 
@@ -82,6 +82,6 @@ seven.
 
 ## Notes for agents
 
-- 39 tools, all prefixed `tribeunal_`. 18 are annotated `readOnlyHint: true`. Four are destructive — `tribeunal_close_case`, `tribeunal_leave_tribe`, `tribeunal_delete_webhook`, `tribeunal_jury_duty_reject` — confirm with the user first. One is open-world (`tribeunal_set_side_image`, it fetches a public URL).
+- 41 tools, all prefixed `tribeunal_`. 13 are annotated `readOnlyHint: true`. Ten carry `destructiveHint: true` — `tribeunal_delete_case`, `tribeunal_delete_comment`, `tribeunal_delete_tribe`, `tribeunal_delete_webhook`, `tribeunal_remove_tribe_member`, `tribeunal_leave_tribe`, `tribeunal_leave_jury`, `tribeunal_close_case`, `tribeunal_revoke_vote`, `tribeunal_cancel_jury_duty` — confirm with the user first. One is open-world (`tribeunal_update_side_image`, it fetches a public URL).
 - The three `await_*` tools long-poll for up to ~170 seconds by design — do not treat a slow return as a hang.
 - Rate limit: 100 API requests/hour per IP.

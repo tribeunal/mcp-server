@@ -21,7 +21,8 @@ Cases, sides, tribes and webhooks are addressed by UUID; a number or slug will n
 the case with `tribeunal_search_cases`. Comment, evidence and member ids are plain strings.
 
 You act as whoever signed in — on a shared connector, not necessarily the account that owns the
-case. `tribeunal_get_current_user` answers it.
+case. `tribeunal_get_user` with no `userId` answers it — there is no separate current-user tool; the
+same tool given a `userId` (a UUID or a username) reads anyone else's account instead.
 
 ## Where to go next
 

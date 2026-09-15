@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { dispatchToolCall } from '../src/core/tools.js';
-import { SetSideImageSchema } from '../src/tools/sides.js';
+import { UpdateSideImageSchema } from '../src/tools/sides.js';
 import { CreateCaseSchema } from '../src/tools/cases.js';
 import { TribeunalAPIClient } from '../src/client/api-client.js';
 import type { TribeunalAPIClient as TribeunalAPIClientType } from '../src/client/api-client.js';
@@ -12,22 +12,22 @@ const SIDE_UUID = '1b9d3c2a-4e5f-4a1b-9c3d-2e5f4a1b9c3d';
 const OTHER_SIDE_UUID = '2c8e4d3b-5f6a-4b2c-8d4e-3f6a4b2c8d4e';
 const IMAGE_URL = 'https://example.com/side.png';
 
-/** Fake client that records getCase/setSideImage calls and returns canned bodies. */
+/** Fake client that records getCase/updateSideImage calls and returns canned bodies. */
 function fakeClient(
-  record: { setSideImageArgs?: [string, string] },
+  record: { updateSideImageArgs?: [string, string] },
   opts: { caseSides: Array<{ uuid: string; name: string }> },
 ): TribeunalAPIClientType {
   return {
     getCase: async () => ({ uuid: CASE_UUID, sides: opts.caseSides }),
-    setSideImage: async (sideId: string, imageUrl: string) => {
-      record.setSideImageArgs = [sideId, imageUrl];
+    updateSideImage: async (sideId: string, imageUrl: string) => {
+      record.updateSideImageArgs = [sideId, imageUrl];
       return { uuid: SIDE_UUID, name: 'Yes', imageUrl };
     },
   } as unknown as TribeunalAPIClientType;
 }
 
-test('tribeunal_set_side_image dispatches to setSideImage when the side belongs to the case', async () => {
-  const record: { setSideImageArgs?: [string, string] } = {};
+test('tribeunal_update_side_image dispatches to updateSideImage when the side belongs to the case', async () => {
+  const record: { updateSideImageArgs?: [string, string] } = {};
   const client = fakeClient(record, {
     caseSides: [
       { uuid: SIDE_UUID, name: 'Yes' },
@@ -35,50 +35,50 @@ test('tribeunal_set_side_image dispatches to setSideImage when the side belongs 
     ],
   });
 
-  const r = await dispatchToolCall(client, 'tribeunal_set_side_image', {
+  const r = await dispatchToolCall(client, 'tribeunal_update_side_image', {
     caseId: CASE_UUID,
     sideId: SIDE_UUID,
     imageUrl: IMAGE_URL,
   });
 
-  assert.deepEqual(record.setSideImageArgs, [SIDE_UUID, IMAGE_URL]);
+  assert.deepEqual(record.updateSideImageArgs, [SIDE_UUID, IMAGE_URL]);
   assert.ok(Array.isArray(r.content) && r.content[0]?.type === 'text');
   assert.match(r.content[0].text, /successfully/i);
 });
 
-test('tribeunal_set_side_image refuses a sideId that is not part of the named case', async () => {
-  const record: { setSideImageArgs?: [string, string] } = {};
+test('tribeunal_update_side_image refuses a sideId that is not part of the named case', async () => {
+  const record: { updateSideImageArgs?: [string, string] } = {};
   const client = fakeClient(record, {
     caseSides: [{ uuid: OTHER_SIDE_UUID, name: 'No' }],
   });
 
-  const r = await dispatchToolCall(client, 'tribeunal_set_side_image', {
+  const r = await dispatchToolCall(client, 'tribeunal_update_side_image', {
     caseId: CASE_UUID,
     sideId: SIDE_UUID,
     imageUrl: IMAGE_URL,
   });
 
-  assert.equal(record.setSideImageArgs, undefined, 'setSideImage must not be called for a mismatched side');
+  assert.equal(record.updateSideImageArgs, undefined, 'updateSideImage must not be called for a mismatched side');
   assert.ok(Array.isArray(r.content) && r.content[0]?.type === 'text');
   assert.match(r.content[0].text, /not part of case/);
 });
 
-test('SetSideImageSchema rejects an http imageUrl', () => {
-  assert.throws(() => SetSideImageSchema.parse({
+test('UpdateSideImageSchema rejects an http imageUrl', () => {
+  assert.throws(() => UpdateSideImageSchema.parse({
     caseId: CASE_UUID,
     sideId: SIDE_UUID,
     imageUrl: 'http://example.com/side.png',
   }));
 });
 
-test('SetSideImageSchema rejects a non-UUID caseId or sideId', () => {
-  assert.throws(() => SetSideImageSchema.parse({ caseId: '878', sideId: SIDE_UUID, imageUrl: IMAGE_URL }));
-  assert.throws(() => SetSideImageSchema.parse({ caseId: CASE_UUID, sideId: '878', imageUrl: IMAGE_URL }));
+test('UpdateSideImageSchema rejects a non-UUID caseId or sideId', () => {
+  assert.throws(() => UpdateSideImageSchema.parse({ caseId: '878', sideId: SIDE_UUID, imageUrl: IMAGE_URL }));
+  assert.throws(() => UpdateSideImageSchema.parse({ caseId: CASE_UUID, sideId: '878', imageUrl: IMAGE_URL }));
 });
 
-test('SetSideImageSchema accepts a valid https imageUrl and UUIDs', () => {
+test('UpdateSideImageSchema accepts a valid https imageUrl and UUIDs', () => {
   assert.deepEqual(
-    SetSideImageSchema.parse({ caseId: CASE_UUID, sideId: SIDE_UUID, imageUrl: IMAGE_URL }),
+    UpdateSideImageSchema.parse({ caseId: CASE_UUID, sideId: SIDE_UUID, imageUrl: IMAGE_URL }),
     { caseId: CASE_UUID, sideId: SIDE_UUID, imageUrl: IMAGE_URL },
   );
 });

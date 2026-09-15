@@ -18,51 +18,53 @@ const ACTIVITY_TYPES = [
   'evidence_marked',
   'evidence_unmarked',
   'jury_joined',
+  'jury_left',
   'trial_closed',
   'trial_reopened',
+  'trial_updated',
 ] as const;
 
 export const GetCaseActivitySchema = z.object({
-  caseId: caseUuid('Case UUID whose activity feed to read'),
+  caseId: caseUuid('Case UUID whose activity to read.'),
   after: z
     .string()
     .optional()
-    .describe('Opaque cursor from a previous response (latestCursor or an event cursor). Omit to get the tail (latest events).'),
+    .describe('Opaque cursor from a previous response\'s latestCursor; omit to read the tail (latest events).'),
   types: z
     .array(z.enum(ACTIVITY_TYPES))
     .optional()
-    .describe('Restrict to these event types (e.g. ["vote","trial_closed"]). Omit for all.'),
-  limit: z.number().int().min(1).max(100).optional().describe('Max events to return (1-100, default 50)'),
+    .describe('Restrict to these event types (vote, vote_revoked, comment, evidence_marked, evidence_unmarked, jury_joined, jury_left, trial_closed, trial_reopened, trial_updated); omit for all types.'),
+  limit: z.number().int().min(1).max(100).optional().describe('Max events per page, 1-100; defaults to 50.'),
 });
 
 export const AwaitCaseActivitySchema = z.object({
-  caseId: caseUuid('Case UUID to watch'),
+  caseId: caseUuid('Case UUID to watch.'),
   after: z
     .string()
     .optional()
-    .describe('Cursor to watch from; omit to anchor at the current tail ("watch from now"). On re-arm, pass the previous latestCursor.'),
+    .describe('Cursor to watch from (a previous latestCursor); omit to anchor at the current tail ("watch from now").'),
   types: z
     .array(z.enum(ACTIVITY_TYPES))
     .optional()
-    .describe('Only wake for these event types (e.g. ["vote"] to wait for the next vote)'),
+    .describe('Only wake for these event types — same enum as tribeunal_get_case_activity.'),
   timeoutS: z
     .number()
     .int()
     .min(5)
     .max(170)
     .default(120)
-    .describe('Seconds to block waiting for new events (5-170, default 120). On timeout the result has timedOut:true — re-arm with the returned latestCursor.'),
+    .describe('Seconds to block, 5-170; defaults to 120. On timeout, re-arm with the returned latestCursor.'),
 });
 
 export const AwaitVerdictSchema = z.object({
-  caseId: caseUuid('Case UUID whose verdict to await'),
+  caseId: caseUuid('Case UUID whose verdict to await, from tribeunal_get_case or tribeunal_search_cases.'),
   timeoutS: z
     .number()
     .int()
     .min(5)
     .max(170)
     .default(150)
-    .describe('Seconds to block waiting for the case to reach a verdict (5-170, default 150). Returns instantly if the case is already terminal.'),
+    .describe('Seconds to block, 5-170; defaults to 150. Returns instantly (no blocking) if the case is already terminal.'),
 });
 
 /** Injectable side-channel so the worker can stream progress and cancellation, and tests can run deterministically. */
