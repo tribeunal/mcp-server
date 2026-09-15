@@ -82,6 +82,22 @@ one who isn't on the case sees an access-denied page, never the case itself.
 
 Leaving a private tribe is not reversible on its own. Confirm before doing it.
 
+## Owner-side moves
+
+`tribeunal_update_tribe` changes `name`, `description`, `intro` or `visibility` — owner or admin
+only, at least one field. Flipping `visibility` to private does not evict existing members; it only
+stops new ones finding or joining the tribe without an invitation.
+
+`tribeunal_remove_tribe_member` (owner or admin) drops one member and their pending invitations to
+this tribe; it does not touch jury seats they already hold on existing cases — those are separate.
+Refused with 409 `cannot_remove_owner` on the tribe's own owner: there is no tool that transfers
+ownership, so removing the owner is not offered at all. Confirm before removing someone — it is not
+the same as them leaving, and they get no chance to undo it themselves.
+
+`tribeunal_delete_tribe` (owner or admin) is permanent: every membership and pending invitation goes.
+Cases the tribe already recruited jurors for are untouched — their invites just lose the tribe link.
+Confirm before calling it; there is no way back short of remaking the tribe from scratch.
+
 ## Gotchas
 
 | Trap | What is true |
@@ -93,3 +109,5 @@ Leaving a private tribe is not reversible on its own. Confirm before doing it.
 | A tribe invite lands the person on the jury | Tribe membership and jury seats are separate things |
 | The case URL is what you send | For a private case, send the share link |
 | Leaving a private tribe is undoable | It consumes the invitation |
+| The tribe owner can be removed like any member | `remove_tribe_member` refuses `cannot_remove_owner` — there is no ownership transfer |
+| Deleting a tribe undoes the cases it staffed | Those cases and their juries are untouched; only the tribe link on pending invites is lost |

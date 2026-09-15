@@ -39,10 +39,34 @@ export function extractApiErrorMessage(data: unknown, fallback: string): string 
     if (typeof d.error === 'string' && d.error.trim()) return d.error;
     if (d.error && typeof d.error.message === 'string' && d.error.message.trim()) return d.error.message;
     if (typeof d.message === 'string' && d.message.trim()) return d.message;
-    if (typeof d.title === 'string' && d.title.trim()) return d.title;
+    if (typeof d.title === 'string' && d.title.trim()) {
+      const title = d.title.trim();
+      // API Platform's generic problem+json title for an unhandled HttpException
+      // (a plain 404 on a deleted/unknown resource, for instance) is the
+      // carries-no-information "An error occurred" -- worse than useless once
+      // wrapped as "API Error: An error occurred", since every status then
+      // reads the same. Swap it for the status code plus its standard reason
+      // phrase so a 404 is never indistinguishable from a 403 or a 500.
+      if (title.toLowerCase() === 'an error occurred' && typeof d.status === 'number') {
+        return `${d.status} ${HTTP_STATUS_TEXT[d.status] ?? title}`;
+      }
+      return title;
+    }
+    if (typeof d.status === 'number') return `${d.status} ${HTTP_STATUS_TEXT[d.status] ?? 'request failed'}`;
   }
   return fallback;
 }
+
+const HTTP_STATUS_TEXT: Record<number, string> = {
+  400: 'Bad Request',
+  401: 'Unauthorized',
+  403: 'Forbidden',
+  404: 'Not Found',
+  409: 'Conflict',
+  422: 'Unprocessable Entity',
+  429: 'Too Many Requests',
+  500: 'Internal Server Error',
+};
 
 export interface TribeunalAPIClientConfig {
   /** Base URL of the Tribeunal API, e.g. https://tribeunal.com/api */
@@ -159,6 +183,19 @@ export class TribeunalAPIClient {
     );
   }
 
+  /**
+   * PATCH helper with a per-request Content-Type override. Most PATCH bodies are
+   * plain JSON; the Tribe PATCH op uses default (de)serialization and therefore
+   * requires `application/merge-patch+json` (an ApiResource Patch with
+   * `deserialize:false`, like the case/comment PATCHes here, does not).
+   */
+  private async patch<T = unknown>(path: string, body: unknown, contentType: string = 'application/json'): Promise<T> {
+    const response = await this.client.patch(path, body, {
+      headers: { 'Content-Type': contentType },
+    });
+    return response.data as T;
+  }
+
   // Case endpoints
   async searchCases(params: {
     query?: string;
@@ -232,10 +269,21 @@ export class TribeunalAPIClient {
     return response.data;
   }
 
-  async setSideImage(sideId: string, imageUrl: string) {
+  async updateSideImage(sideId: string, imageUrl: string) {
     // POST /api/sides/{uuid}/image {url} — owner-only, uuid-only. Uses the /api baseURL
     // like createCase. A 422 carries {reason, message}; the response interceptor surfaces it.
     const response = await this.client.post(`/sides/${sideId}/image`, { url: imageUrl });
+    return response.data;
+  }
+
+  /** PATCH /api/cases/{uuid} — owner/admin only; body is {title?, description?} plain JSON. */
+  async updateCase(caseId: string, body: { title?: string; description?: string }) {
+    return this.patch(`/cases/${caseId}`, body);
+  }
+
+  /** DELETE /api/cases/{uuid} → 204 — owner/admin only, and only while the case has no vote history. */
+  async deleteCase(caseId: string) {
+    const response = await this.client.delete(`/cases/${caseId}`);
     return response.data;
   }
 
@@ -261,16 +309,21 @@ export class TribeunalAPIClient {
     return response.data;
   }
 
+  /**
+   * POST /api/cases/{uuid}/jury/leave — unlike joinJury/castVote/revokeVote, this
+   * route IS under /api (uses the /api baseURL like createCase, not baseOrigin).
+   * Frees the caller's own jury seat; requeues or cancels a matched matchmaking
+   * request server-side.
+   */
+  async leaveJury(caseId: string) {
+    const response = await this.client.post(`/cases/${caseId}/jury/leave`);
+    return response.data;
+  }
+
   async revokeVote(caseId: string, sideId: string) {
     // The trailing segment is the SIDE uuid (the API looks up the caller's vote
     // by (user, case)); this vote route has no /api/ prefix.
     const response = await this.client.delete(`${this.baseOrigin}/cases/${caseId}/vote/${sideId}`);
-    return response.data;
-  }
-
-  async getVoteStats(caseId: string) {
-    // Served by GET /api/cases/{uuid}/votes (uses the /api baseURL, not baseOrigin).
-    const response = await this.client.get(`/cases/${caseId}/votes`);
     return response.data;
   }
 
@@ -290,12 +343,40 @@ export class TribeunalAPIClient {
   }
 
   /**
+   * PATCH /api/tribes/{uuid} with Content-Type application/merge-patch+json — the
+   * existing ApiResource Patch op (default deserialization, unlike the case/comment
+   * PATCHes), so unlike those this one needs the merge-patch header. `body` is
+   * already mapped to backend keys by the caller (visibility -> type as an int).
+   * Owner or admin only.
+   */
+  async updateTribe(tribeId: string, body: Record<string, unknown>) {
+    return this.patch(`/tribes/${tribeId}`, body, 'application/merge-patch+json');
+  }
+
+  /** DELETE /api/tribes/{uuid} → 204 — owner or admin only. Permanent. */
+  async deleteTribe(tribeId: string) {
+    const response = await this.client.delete(`/tribes/${tribeId}`);
+    return response.data;
+  }
+
+  /**
    * Backs tribeunal_list_tribe_members via GET /api/tribes/{uuid}/members. Roster
    * is member-only: a private tribe the caller cannot view 404s, a viewable tribe
    * they are not in 403s. Hand-built scalars only — no member credentials.
    */
   async listTribeMembers(tribeId: string, params: { page?: number; limit?: number }) {
     const response = await this.client.get(`/tribes/${tribeId}/members`, { params });
+    return response.data;
+  }
+
+  /**
+   * DELETE /api/tribes/{uuid}/members/{user} — owner or admin only. `{user}` resolves
+   * a username or a UUID on the backend; `username` is URL-encoded since it can carry
+   * characters (e.g. a dot or plus in an email-shaped name) that would otherwise break
+   * the path segment.
+   */
+  async removeTribeMember(tribeId: string, username: string) {
+    const response = await this.client.delete(`/tribes/${tribeId}/members/${encodeURIComponent(username)}`);
     return response.data;
   }
 
@@ -353,6 +434,15 @@ export class TribeunalAPIClient {
     return response.data;
   }
 
+  /**
+   * PATCH /api/webhooks/{uuid}/delivery — the narrow update route (events and/or
+   * active only); the wide PATCH /api/webhooks/{uuid} (url) and POST .../rotate
+   * are deliberately not called from the MCP surface (see ScopeMap). Owner only.
+   */
+  async updateWebhookDelivery(webhookId: string, body: { events?: string[]; active?: boolean }) {
+    return this.patch(`/webhooks/${webhookId}/delivery`, body);
+  }
+
   // User endpoints
   async getUser(id: string) {
     const response = await this.client.get(`/users/${id}`);
@@ -370,13 +460,12 @@ export class TribeunalAPIClient {
     return response.data;
   }
 
-  async getJuryDutyAllowance() {
-    const response = await this.client.get('/jury-duty/allowance');
-    return response.data;
-  }
-
-  async getJuryDutyDashboard() {
-    const response = await this.client.get('/jury-duty/index');
+  /** GET /api/jury-duty/index?page=&limit= — cases the caller currently sits on. */
+  async getJuryDutyIndex(page?: number, limit?: number) {
+    const params: Record<string, number> = {};
+    if (page !== undefined) params.page = page;
+    if (limit !== undefined) params.limit = limit;
+    const response = await this.client.get('/jury-duty/index', { params });
     return response.data;
   }
 
@@ -387,16 +476,6 @@ export class TribeunalAPIClient {
 
   async cancelJuryDuty() {
     const response = await this.client.delete('/jury-duty/cancel');
-    return response.data;
-  }
-
-  async acceptJuryDuty(memberId: string) {
-    const response = await this.client.post(`/jury-duty/accept/${memberId}`);
-    return response.data;
-  }
-
-  async rejectJuryDuty(memberId: string) {
-    const response = await this.client.post(`/jury-duty/reject/${memberId}`);
     return response.data;
   }
 
@@ -438,6 +517,17 @@ export class TribeunalAPIClient {
 
   async listComments(caseId: string) {
     const response = await this.client.get(`/cases/${caseId}/comments`);
+    return response.data;
+  }
+
+  /** PATCH /api/comments/{id} — author only. */
+  async updateComment(commentId: string, text: string) {
+    return this.patch(`/comments/${commentId}`, { text });
+  }
+
+  /** DELETE /api/comments/{id} → 204 — author, case owner, or admin. */
+  async deleteComment(commentId: string) {
+    const response = await this.client.delete(`/comments/${commentId}`);
     return response.data;
   }
 

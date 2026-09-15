@@ -115,6 +115,19 @@ votes. Attach tags to a case you need a decision from and it can sit at zero vot
 looking exactly like a case nobody has got to yet. Tags are for discovery by humans browsing the
 platform. Leave them off anything you need an answer from.
 
+## Fixing a case after creation
+
+The structural settings above — jury size, deadline, visibility, jury type — are fixed at creation;
+there is no tool that changes them afterwards. `tribeunal_update_case` can only change `title` and
+`description`, and only while the case is still `jury_selection` or `open`: once anyone has ever cast
+a vote, even one since revoked, the title locks (409 `title_locked`) though the description stays
+editable. Get the framing right before you create it.
+
+Made the case by mistake? `tribeunal_delete_case` removes it, but only before any vote has ever been
+cast and only for the owner or an admin — otherwise it refuses with 409 `case_in_use`. A case with a
+vote on it, or one that already closed, is not deletable; use `tribeunal_close_case` instead and let
+it produce a verdict.
+
 ## Gotchas
 
 | Trap | What is true |
@@ -125,6 +138,8 @@ platform. Leave them off anything you need an answer from.
 | Leaving `visibility` out makes a public case | It makes a private one with an invited jury. Say `public` when people should find it; a `juryType` of `public` alone also makes a public case |
 | `minVotes` defaults to a real quorum | It defaults to none, so one vote can carry a case. Set it when turnout matters |
 | Setting a decision requirement guarantees one | Missing it voids the case instead of deciding it |
+| A typo'd title can be fixed any time | Only until the first vote; after that `update_case` refuses with `title_locked` |
+| A wrong case can always be deleted | Only before any vote; once one lands, `delete_case` refuses `case_in_use` — close it instead |
 
 ## Then what
 

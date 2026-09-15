@@ -196,6 +196,47 @@ const page = await client.callTool('tribeunal_await_case_activity', {
 }); // { events, latestCursor, timedOut, waitedS }
 ```
 
+## Lifecycle Examples (2.0.0)
+
+Update, delete, leave and status tools added in 2.0.0. See `CHANGELOG.md` for the full migration table.
+
+### Edit a case you own
+
+```typescript
+// Only while the case is jury_selection or open. The title cannot change once a vote has
+// ever been cast (400 title_locked) — the description always can.
+await client.callTool('tribeunal_update_case', {
+  caseId,
+  description: 'Updated: now includes the Q3 numbers requested in comments.',
+});
+```
+
+### Delete a case before anyone has voted
+
+```typescript
+// Refused with 409 case_in_use once a vote has ever been cast — close it instead.
+await client.callTool('tribeunal_delete_case', { caseId });
+```
+
+### Give up a jury seat
+
+```typescript
+// Refused with 409 already_voted if you have a vote on the case — revoke_vote first.
+const left = await client.callTool('tribeunal_leave_jury', { caseId });
+// { left: true, requeued, case: { uuid, title, url } }
+// requeued: true means a matched seat's search went back into the matchmaking queue.
+```
+
+### Check your jury-duty status in one call
+
+```typescript
+// Replaces the separate status/dashboard/allowance/history tools from 1.x.
+const status = await client.callTool('tribeunal_get_jury_duty_status', {
+  historyDays: 7,
+});
+// { request, assignments: { cases, total, page, limit }, allowance, history }
+```
+
 ## Tribe Management Examples
 
 ### Browse Technology Tribes
@@ -232,6 +273,17 @@ try {
     console.log('No such tribe, or it is private and you have no invitation');
   }
 }
+```
+
+### Remove a Member (owner/admin)
+
+```typescript
+// {user} resolves a username or a uuid. Removing the owner is refused (409 cannot_remove_owner).
+const removed = await client.callTool('tribeunal_remove_tribe_member', {
+  tribeId: '1f185d65-4764-614a-8052-1da3f306fec7',
+  username: 'formerContributor',
+});
+// { removed: true, tribe: { uuid }, user: { uuid, username } }
 ```
 
 ## Webhook Examples
@@ -293,6 +345,17 @@ for (const endpoint of items.filter((e) => e.failureCount > 10)) {
 Deleting an endpoint destroys its secret. Re-registering the same URL issues a new one, so
 update the receiver before you re-create it.
 
+### Pause a Noisy Endpoint Instead of Deleting It
+
+```typescript
+// Changes which events are delivered, or pauses/resumes delivery. The URL and secret
+// cannot be changed here — delete and re-create with tribeunal_create_webhook for that.
+await client.callTool('tribeunal_update_webhook', {
+  webhookId: endpoint.uuid,
+  active: false,
+});
+```
+
 ## Use Case: Decision Support Bot
 
 ```typescript
@@ -300,14 +363,12 @@ class DecisionSupportBot {
   constructor(private client: Client) {}
   
   async analyzeTrialForVoting(caseId: string): Promise<string> {
-    // Get trial details
+    // tribeunal_get_case already carries totalVotes and each side's totalVotes/votePercentage
+    // (tribeunal_get_vote_stats was removed in 2.0.0 as a strict subset of this call).
     const trial = await this.client.callTool('tribeunal_get_case', { id: caseId });
     
     // Get all evidence
     const evidence = await this.client.callTool('tribeunal_list_evidence', { caseId });
-    
-    // Get current voting statistics
-    const stats = await this.client.callTool('tribeunal_get_vote_stats', { caseId });
     
     // Analyze evidence quality
     const sideAnalysis = trial.sides.map(side => {
@@ -318,7 +379,7 @@ class DecisionSupportBot {
         side: side.name,
         evidenceCount: sideEvidence.length,
         avgEvidenceRating: avgRating,
-        currentVotes: stats.sides.find(s => s.id === side.id)?.voteCount || 0
+        currentVotes: side.totalVotes || 0
       };
     });
     
@@ -331,12 +392,12 @@ class DecisionSupportBot {
 Based on my analysis:
 - Trial: ${trial.title}
 - Type: ${trial.type}
-- Total votes: ${stats.totalVotes}
+- Total votes: ${trial.totalVotes}
 
 Recommendation: ${bestOption.side}
 - Evidence pieces: ${bestOption.evidenceCount}
 - Average evidence rating: ${bestOption.avgEvidenceRating.toFixed(1)}/5
-- Current support: ${((bestOption.currentVotes / stats.totalVotes) * 100).toFixed(1)}%
+- Current support: ${((bestOption.currentVotes / trial.totalVotes) * 100).toFixed(1)}%
 
 The evidence suggests this option has the strongest support.
     `;
@@ -352,27 +413,27 @@ class MarketResearchAutomation {
   
   async createProductFeaturePoll(product: string, features: string[]): Promise<void> {
     // Create the poll
-    const trial = await this.client.callTool('tribeunal_create_trial', {
+    const trial = await this.client.callTool('tribeunal_create_case', {
       title: `Which feature should we prioritize for ${product}?`,
       description: `Help us decide which feature to implement next in ${product}.`,
       type: 'poll',
       juryType: 'public',
       sides: features.map(f => ({ name: f })),
-      trialLength: 259200, // 3 days
+      caseLength: 259200, // 3 days
       tags: ['product', 'features', 'market-research', product.toLowerCase()]
     });
     
-    console.log(`Poll created: ${trial.id}`);
+    console.log(`Poll created: ${trial.uuid}`);
     
     // Schedule monitoring
-    this.scheduleMonitoring(trial.id);
+    this.scheduleMonitoring(trial.uuid);
   }
   
   private async scheduleMonitoring(caseId: string): Promise<void> {
     const checkInterval = setInterval(async () => {
       const trial = await this.client.callTool('tribeunal_get_case', { id: caseId });
       
-      if (trial.status === 'closed') {
+      if (trial.state === 'closed') {
         clearInterval(checkInterval);
         await this.generateReport(caseId);
       }
@@ -380,20 +441,20 @@ class MarketResearchAutomation {
   }
   
   private async generateReport(caseId: string): Promise<void> {
+    // tribeunal_get_case already carries totalVotes and each side's totalVotes/votePercentage
+    // (tribeunal_get_vote_stats was removed in 2.0.0 as a strict subset of this call).
     const trial = await this.client.callTool('tribeunal_get_case', { id: caseId });
-    const stats = await this.client.callTool('tribeunal_get_vote_stats', { caseId });
     
-    const sortedResults = stats.sides.sort((a, b) => b.voteCount - a.voteCount);
+    const sortedResults = [...trial.sides].sort((a, b) => b.totalVotes - a.totalVotes);
     
     console.log(`\n=== Market Research Report ===`);
     console.log(`Poll: ${trial.title}`);
-    console.log(`Total participants: ${stats.totalVotes}`);
-    console.log(`Duration: ${trial.trialLength / 86400} days`);
+    console.log(`Total participants: ${trial.totalVotes}`);
+    console.log(`Duration: ${trial.caseLength / 86400} days`);
     console.log(`\nResults:`);
     
     sortedResults.forEach((side, index) => {
-      const percentage = (side.voteCount / stats.totalVotes * 100).toFixed(1);
-      console.log(`${index + 1}. ${side.name}: ${percentage}% (${side.voteCount} votes)`);
+      console.log(`${index + 1}. ${side.name}: ${side.votePercentage.toFixed(1)}% (${side.totalVotes} votes)`);
     });
     
     console.log(`\nRecommendation: Prioritize "${sortedResults[0].name}" based on community feedback.`);
@@ -415,8 +476,8 @@ await researcher.createProductFeaturePoll('MyApp', [
 
 ```typescript
 try {
-  const result = await client.callTool('tribeunal_create_trial', {
-    // ... trial data
+  const result = await client.callTool('tribeunal_create_case', {
+    // ... case data
   });
 } catch (error) {
   if (error.message.includes('Invalid parameters')) {

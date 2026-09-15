@@ -63,7 +63,7 @@ const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
 let evalUsername: string | undefined;
 async function evalIdentity(): Promise<string> {
   if (evalUsername) return evalUsername;
-  const out = await callAs('eval', 'tribeunal_get_current_user', {});
+  const out = await callAs('eval', 'tribeunal_get_user', {});
   const m = /"username"\s*:\s*"([^"]+)"/.exec(out);
   if (!m) throw new Error(`could not resolve the eval identity's username from:\n${out.slice(0, 200)}`);
   evalUsername = m[1];

@@ -15,19 +15,22 @@ and forming the argument is `weighing-evidence`, which this skill hands off to.
 
 ## Checklist
 
-- [ ] Matchmaking path: check the allowance, take the dashboard, start a session, accept or reject
+- [ ] Matchmaking path: start a search, poll status, vote once a seat opens
 - [ ] Named-case path: read the case first
 - [ ] Take a seat if the jury needs one
 - [ ] Run the skip ladder before voting
 - [ ] Form a view with `weighing-evidence`
 - [ ] Vote **with a rationale**
-- [ ] Close any matchmaking session you opened
+- [ ] Cancel any search still open when you finish
 
 ## Getting a case
 
-**Matchmaking.** `tribeunal_jury_duty_allowance` says whether you have capacity today;
-`tribeunal_jury_duty_dashboard` shows what is already assigned; `tribeunal_jury_duty_start` requests
-work; accept or reject each assignment by its member id.
+**Matchmaking.** `tribeunal_start_jury_duty` enters an anonymous queue for public cases — no case
+chosen yet, one daily search spent, refused with 429 `daily_limit` or `active_jury_limit`. There is
+no accept step: poll `tribeunal_get_jury_duty_status` and a match appears in `assignments`, already
+yours. An entry there in `jury_selection` is a seat that has not opened yet, not a case that turned
+you down — vote once its `state` is `open`. `allowance.canStartSearch` tells you whether you have
+room to start another search before you try. Don't want the seat? See "Declining a seat" below.
 
 **Named case.** Read it with `tribeunal_get_case` before anything else. What you learn there decides
 every branch below.
@@ -73,18 +76,30 @@ because it is ahead is how a jury stops being a jury.
 
 `tribeunal_revoke_vote` withdraws a vote if you got it wrong.
 
+## Declining a seat
+
+Leave a matched seat you don't intend to vote on with `tribeunal_leave_jury` — a case UUID, never a
+member id; there is no member id anywhere in this flow. If the seat came from matchmaking and you
+hold no other *waiting* search, leaving requeues the search with a fresh timestamp (`requeued:
+true`); otherwise it simply cancels that search (`requeued: false`). Refused once you already hold a
+vote on the case — 409 `already_voted` — revoke the vote first if you meant to change your mind
+rather than leave. `tribeunal_join_jury` seats you again any time afterwards.
+
 ## Leaving nothing open
 
-If you called `tribeunal_jury_duty_start`, close it with `tribeunal_jury_duty_cancel` before you
-finish, even on a run that voted on nothing. A pending request blocks the next session, and the next
-run's failure will look like a matchmaking bug rather than your leftovers.
+If you called `tribeunal_start_jury_duty` and are done for this run, cancel it with
+`tribeunal_cancel_jury_duty` even on a run that voted on nothing — but note it withdraws only a
+*waiting* search; a seat already matched needs `tribeunal_leave_jury` instead, and a request the
+matchmaker has already assigned to a case cannot be cancelled directly. A pending search blocks the
+next session, and the next run's failure will look like a matchmaking bug rather than your leftovers.
 
 ## Gotchas
 
 | Trap | What is true |
 | --- | --- |
 | A refused vote means the case rejected your reasoning | It usually means you never had a seat |
-| A healthy jury-duty allowance means you can vote on a tagged case | Two separate daily counters. `tribeunal_jury_duty_allowance` reports jury-duty sessions and says nothing about the free-vote budget the tag gate spends — a tag refusal alongside "27 remaining" is consistent, not contradictory |
+| A healthy jury-duty allowance means you can vote on a tagged case | Two separate daily counters. The `allowance` block in `tribeunal_get_jury_duty_status` reports jury-duty searches and says nothing about the free-vote budget the tag gate spends — a tag refusal alongside `canStartSearch: true` is consistent, not contradictory |
+| An `assignments` entry means you can vote | Only once its `state` is `open`; a `jury_selection` entry is a seat still waiting on the rest of the jury |
 | The invite list can tell you whether you were invited | Not through these tools — it holds emails, and your identity has none |
-| A jury-duty dashboard entry means you are invited to that case | It lists matchmaking assignments, which are a different thing |
+| `tribeunal_cancel_jury_duty` clears a matched seat | It withdraws only a *waiting* search; a matched seat needs `tribeunal_leave_jury` |
 | Skipping quietly is tidy | An unexplained skip is indistinguishable from a broken run |

@@ -27,10 +27,33 @@ so match on the code where there is one and on the status plus context otherwise
 | `evidence_frozen` | The case closed; its evidence marks are sealed so the record it was judged on stops moving | **Never** |
 | `insufficient_scope` (403) | An OAuth session lacks the scope for this write | Re-consent. A scope granted after sign-in is not in the old token |
 | 429 | Rate limited | Yes, after backing off |
-| 404 on a case you expect | Either it does not exist, or it is private and you are not on it | Not without access |
+| 404 on a case or tribe you expect | Either it does not exist, or it is private and you are not on it | Not without access |
 
 A 403 from Tribeunal is never an authentication problem. It means the identity is known and not
 permitted, so re-authenticating changes nothing.
+
+## Updating and removing things
+
+The lifecycle tools (`update_case`, `delete_case`, `update_comment`, `delete_comment`, `update_tribe`,
+`delete_tribe`, `remove_tribe_member`, `leave_jury`) answer with the same code shape.
+
+| Code | Means | Retry? |
+| --- | --- | --- |
+| `not_case_owner` | You don't own this case and aren't an admin — `update_case`, `delete_case` | Not without ownership |
+| `case_not_editable` | The case isn't `jury_selection` or `open` — `update_case` | Only if it reopens; never on a moderation state |
+| `title_locked` | The title can't change once any vote has ever been cast, even a revoked one — `update_case` | **Never** for the title; edit the description instead |
+| `field_not_editable` | The body named a field that tool doesn't own — `update_case`, `update_webhook` | Only with a corrected body |
+| `case_in_use` | The case has a vote, a verdict, or isn't `jury_selection`/`open` — `delete_case` refuses | **Never** — use `close_case` instead |
+| `comment_not_found` | No comment with that id, or its case is one you can't view — `update_comment`, `delete_comment` | Not without a valid id |
+| `not_comment_author` | Only the comment's author may edit it; delete also allows the case owner or an admin — `update_comment`, `delete_comment` | Not as anyone else |
+| `comment_is_evidence` | A marked comment must be unmarked first — `delete_comment`; see `unmark_evidence` | After unmarking |
+| `invalid_text` | The comment text is empty or over the length limit — `update_comment` | Only with corrected text |
+| `not_a_juror` | You hold no jury seat on this case — `leave_jury` | Not without a seat |
+| `already_voted` | A vote is still counted for this seat — `leave_jury` refuses; revoke it first with `revoke_vote` | After revoking |
+| `not_tribe_owner` | Only the tribe's owner or an admin may do this — `update_tribe`, `delete_tribe`, `remove_tribe_member` | Not without ownership |
+| `not_tribe_member` | The named user doesn't belong to this tribe — `remove_tribe_member` | Not without membership |
+| `cannot_remove_owner` | The tribe's owner can't be removed as a member — `remove_tribe_member` | **Never** through this tool |
+| `user_not_found` | No account matches that id or username — `remove_tribe_member`; `get_user` on an unknown id or username 404s the same way | Not without a valid id |
 
 ## The refusals that look like success
 

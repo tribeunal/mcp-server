@@ -18,7 +18,7 @@ export function isUuid(value: unknown): value is string {
   return typeof value === 'string' && UUID_RE.test(value);
 }
 
-function uuidMessage(kind: 'case' | 'side' | 'tribe' | 'webhook'): string {
+function uuidMessage(kind: 'case' | 'side' | 'tribe' | 'webhook' | 'evidence'): string {
   return `Must be a ${kind} UUID (the ${kind}'s "uuid" field, e.g. 8415a252-5e41-4db6-bd5d-ee5b5ad95dd4) — not a numeric id, slug, or name.`;
 }
 
@@ -50,6 +50,30 @@ export function tribeUuid(description: string) {
  */
 export function webhookUuid(description: string) {
   return z.string().regex(UUID_RE, uuidMessage('webhook')).describe(description);
+}
+
+/**
+ * A zod string constrained to the UUID form, for a case-file evidence identifier.
+ * `evidence.id` is a uuid-typed column (App\Entity\Evidence), so a non-UUID id
+ * reaches Doctrine's `find()` and 500s instead of the documented 404
+ * `evidence_not_found`. Used by `tribeunal_rate_evidence`'s `evidenceId`.
+ */
+export function evidenceUuid(description: string) {
+  return z.string().regex(UUID_RE, uuidMessage('evidence')).describe(description);
+}
+
+/**
+ * A zod string constrained to the UUID form, for the `id` param shared by
+ * `tribeunal_mark_evidence` / `tribeunal_unmark_evidence`, which accepts either
+ * a comment uuid (kind: 'comment') or a case-file/evidence uuid (kind: 'file').
+ * Both backing columns are uuid-typed, so either kind 500s on a non-UUID id
+ * without this guard.
+ */
+export function commentOrFileUuid(description: string) {
+  return z
+    .string()
+    .regex(UUID_RE, 'Must be a UUID (the comment\'s or case file\'s "uuid" field, matching kind) — not a numeric id, slug, or name.')
+    .describe(description);
 }
 
 /**
