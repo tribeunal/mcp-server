@@ -12,7 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run format` - Format code with Prettier
 
 ### Testing
-- `npm test` - Run Jest tests (currently no tests implemented)
+- `npm run test:unit` - Run the test suite (`tests/**/*.test.ts` on Node's built-in test runner via `tsx`). This is what CI runs; it needs Node 21+, which expands the glob itself.
+- `npm test` is a leftover Jest script with no config: every suite fails. Don't use it.
 
 ## Architecture Overview
 
@@ -20,26 +21,36 @@ This is a **Model Context Protocol (MCP) Server** that provides programmatic acc
 
 ### Key Components
 
-**Entry Point**: `src/index.ts` - MCP stdio transport setup
-**Core Server**: `src/server.ts` - Tool registration and request handling with Zod validation
+**Entry Point**: `src/index.ts` - MCP stdio transport setup; builds the API client from env (`src/client/from-env.ts`)
+**Shared core**: `src/core/tools.ts` - `TOOL_DEFINITIONS` (every tool) and `dispatchToolCall` (Zod validation, API calls, response text), used by both transports. `src/core/stdio-register.ts` registers them on the stdio `Server`; `src/core/instructions.ts` holds the server instructions
 **API Client**: `src/client/api-client.ts` - Axios-based HTTP client with Bearer token auth
-**Tools**: `src/tools/` - MCP tool schemas organized by domain:
-- `trials.ts` - Trial/decision management
-- `votes.ts` - Voting system  
+**Tools**: `src/tools/` - Zod schemas and result helpers organized by domain:
+- `cases.ts` - Cases (the UI name for trials)
+- `votes.ts` - Voting system
+- `sides.ts` - Side images
+- `comments.ts` - Comments and evidence
+- `activity.ts` - Activity feed and the long-poll await tools
+- `jury-duty.ts` - Jury duty, joining and leaving a jury, inviting jurors
 - `tribes.ts` - Community management
 - `users.ts` - User profiles
-- `decisions.ts` - Decision-focused workflows
+- `webhooks.ts` - Webhook endpoints
+- `disputes.ts`, `deals.ts` - Disputes and escrow deals
+- `uuid.ts` - UUID validators shared by the others
+
+**Ruling verification**: `src/verify/` - the offline verifier behind `tribeunal_verify_ruling`
+
+> `src/server.ts`, `src/auth/auth.ts` and `src/utils/format.ts` are leftovers that nothing imports. Don't extend them.
 
 ### Authentication
 - Uses Bearer token authentication via `TRIBEUNAL_API_KEY` environment variable
 - API client in `src/client/api-client.ts` handles auth headers automatically
-- SSL verification configurable via `TRIBEUNAL_SSL_VERIFY` env var
+- SSL verification configurable via `TRIBEUNAL_VERIFY_SSL` env var (`false` disables it)
 
 ### Data Flow
-1. MCP tools defined in `src/tools/` with Zod schemas
-2. Server in `src/server.ts` registers tools and validates requests
-3. API client in `src/client/api-client.ts` makes authenticated HTTP calls
-4. Responses formatted via `src/utils/format.ts`
+1. Tool schemas are defined in `src/tools/` with Zod; `src/core/tools.ts` collects them into `TOOL_DEFINITIONS`
+2. `src/core/stdio-register.ts` (stdio) and `worker/src/mcp-agent.ts` (Worker) register those definitions
+3. `dispatchToolCall` in `src/core/tools.ts` validates each request and calls the API client in `src/client/api-client.ts`, which makes authenticated HTTP calls
+4. `dispatchToolCall` builds the response text, with per-domain result helpers from `src/tools/`
 
 ### Cloudflare Worker (`worker/`)
 
@@ -109,6 +120,6 @@ procedure, required KV/secrets/Auth0 config, verification, and gotchas. Keep tha
 - `wrangler` - Cloudflare Workers CLI (worker)
 
 ### Testing
-- Jest configured but no tests implemented yet
-- Test structure exists in project but needs implementation
-- Focus areas: tool schemas, API client, MCP protocol compliance
+- Tests live in `tests/*.test.ts` and run with `npm run test:unit` (Node's test runner through `tsx`)
+- CI (`.github/workflows/ci.yml`) builds, runs those tests, and type-checks the worker
+- The `jest` dev dependency and the `npm test` script are unused leftovers
